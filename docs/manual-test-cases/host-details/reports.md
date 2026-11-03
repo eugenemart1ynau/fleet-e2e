@@ -2,7 +2,7 @@
 
 **Page:** `/hosts/:id/{details,software,reports,policies}`  
 **Cases:** 4 (DET-120 – DET-123)  
-**Source section:** §3.10 of the original `MANUAL_TEST_CASES.md`
+**Source section:** section 3.10 of the original `MANUAL_TEST_CASES.md`
 
 > Preconditions (PC-A … PC-F), priority/type definitions, notes tags ([AUTO] [API] [DESTRUCTIVE] [CAUTION] [BUG?]) and open questions (QQn) are defined in the [index](../README.md): see [Conventions](../README.md#14-conventions) and [Open product questions](../README.md#5-open-product-questions).
 

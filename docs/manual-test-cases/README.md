@@ -22,7 +22,7 @@ These are the manual test cases for the two Fleet pages named in the assessment.
 - preview-specific quirks such as re-enrollment
 - basic accessibility
 
-They are also the backlog for the Playwright suite. See the [AUTO] notes and [§4](#4-recommended-automation-subset).
+They are also the backlog for the Playwright suite. See the [AUTO] notes and [section 4](#4-recommended-automation-subset).
 
 ### 1.2 Environment
 
@@ -66,7 +66,7 @@ They are also the backlog for the Playwright suite. See the [AUTO] notes and [§
   - [DESTRUCTIVE] = destructive
   - [CAUTION] = preview quirk
   - [BUG?] = suspected bug, to file as an issue
-  - QQn = open product question (see [§5](#5-open-product-questions))
+  - QQn = open product question (see [section 5](#5-open-product-questions))
 
 **Shared preconditions:**
 
@@ -143,7 +143,7 @@ docs/manual-test-cases/
 
 - Add the case to the file for its category, using the next free ID in that category's range (IDs never change or move between files).
 - If a new category is needed, create a new file in the matching folder and add a row to the tables above.
-- Update the coverage matrix (§3) and, if relevant, the automation subset (§4) and open questions (§5) here.
+- Update the coverage matrix (section 3) and, if relevant, the automation subset (section 4) and open questions (section 5) here.
 
 ---
 

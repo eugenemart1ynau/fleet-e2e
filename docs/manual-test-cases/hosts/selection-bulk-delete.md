@@ -2,7 +2,7 @@
 
 **Page:** `/hosts/manage` (and `/hosts/manage/labels/:id`)  
 **Cases:** 18 (HST-150 – HST-167)  
-**Source section:** §2.10 of the original `MANUAL_TEST_CASES.md`
+**Source section:** section 2.10 of the original `MANUAL_TEST_CASES.md`
 
 > Preconditions (PC-A … PC-F), priority/type definitions, notes tags ([AUTO] [API] [DESTRUCTIVE] [CAUTION] [BUG?]) and open questions (QQn) are defined in the [index](../README.md): see [Conventions](../README.md#14-conventions) and [Open product questions](../README.md#5-open-product-questions).
 

@@ -2,7 +2,7 @@
 
 **Pages:** Hosts ↔ Host details, plus environment/readiness  
 **Cases:** 8 (XPG-001 – XPG-008)  
-**Source section:** §4 of the original `MANUAL_TEST_CASES.md`
+**Source section:** section 4 of the original `MANUAL_TEST_CASES.md`
 
 > Preconditions, conventions and open questions are defined in the [index](README.md): see [Conventions](README.md#14-conventions) and [Open product questions](README.md#5-open-product-questions).
 
