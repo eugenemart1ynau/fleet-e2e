@@ -22,7 +22,7 @@ These are the manual test cases for the two Fleet pages named in the assessment.
 - preview-specific quirks such as re-enrollment
 - basic accessibility
 
-They are also the backlog for the Playwright suite. See the 🤖 notes and [§4](#4-recommended-automation-subset).
+They are also the backlog for the Playwright suite. See the [AUTO] notes and [§4](#4-recommended-automation-subset).
 
 ### 1.2 Environment
 
@@ -61,12 +61,12 @@ They are also the backlog for the Playwright suite. See the 🤖 notes and [§4]
   - **P2** = polish, edge cases, a11y, or rare paths
 - **Type:** Happy, Negative, Edge, Boundary, Error, A11y.
 - **Notes tags:**
-  - 🤖 = automation candidate. 🤖P0 = in the recommended first subset.
-  - 🔌 = has an API oracle that the UI result should match.
-  - 💥 = destructive
-  - ⚠️ = preview quirk
-  - 🐞 = suspected bug, to file as an issue
-  - ❓Qn = open product question (see [§5](#5-open-product-questions))
+  - [AUTO] = automation candidate. [AUTO-P0] = in the recommended first subset.
+  - [API] = has an API oracle that the UI result should match.
+  - [DESTRUCTIVE] = destructive
+  - [CAUTION] = preview quirk
+  - [BUG?] = suspected bug, to file as an issue
+  - QQn = open product question (see [§5](#5-open-product-questions))
 
 **Shared preconditions:**
 
@@ -80,8 +80,8 @@ They are also the backlog for the Playwright suite. See the 🤖 notes and [§4]
 | **PC-F** | Extra global users exist, created by API: Maintainer, Observer, Observer+. Use them for role cases. |
 
 **How to use:**
-- Run the cases in suite order. Destructive cases (💥) go **last** because deleted preview hosts re-enroll, sometimes with a **new id**.
-- After any 💥 or environment-altering case, re-run the PC-A readiness check.
+- Run the cases in suite order. Destructive cases ([DESTRUCTIVE]) go **last** because deleted preview hosts re-enroll, sometimes with a **new id**.
+- After any [DESTRUCTIVE] or environment-altering case, re-run the PC-A readiness check.
 - Record Pass, Fail, Blocked or N/A, plus build/date, for each ID.
 
 ---
@@ -152,51 +152,51 @@ docs/manual-test-cases/
 Requirement areas are taken from the source-backed requirements brief (`fleet-hosts-requirements.md`).
 
 **Legend:**
-- ✅ = manual cases exist and can run on free preview
-- 🤖P0 = in the first automation subset
+- Yes = manual cases exist and can run on free preview
+- [AUTO-P0] = in the first automation subset
 - N/A = listed but can't be run on free preview
 
 ### 3.1 Hosts page
 
 | Requirement area | Cases | Free preview |
 |---|---|---|
-| Header, list, count, default sort, URL normalization, title | HST-001–007, 009, 010, 015–018, 090 | ✅ (🤖P0: 001, 002, 003) |
-| Loading / DataError | HST-008, 011, 012 | ✅ (mock) |
-| Auth guard | HST-013, 014 | ✅ |
-| Search: fields, debounce, trim, escaping, deep link, combos | HST-020–043 | ✅ (🤖P0: 020, 031, 032, 040). 026 is data-dependent. |
-| Status filter: free options, server rules, bad params | HST-050–063 | ✅ (🤖P0: 051, 052 with PC-E). Pending is **N/A (Premium)**. |
-| Label / platform filter, pill, label delete | HST-070–085 | ✅ |
-| Sorting, inverted time columns, invalid params, a11y name | HST-090–101 | ✅ |
-| Edit columns: persist, cancel, fail, per-user | HST-102–111 | ✅ |
-| Export CSV | HST-120–127 | ✅ |
-| Empty states and bad page params | HST-128, 130–134 | ✅ (🤖P0: 128; 131 via mock) |
+| Header, list, count, default sort, URL normalization, title | HST-001–007, 009, 010, 015–018, 090 | Yes ([AUTO-P0]: 001, 002, 003) |
+| Loading / DataError | HST-008, 011, 012 | Yes (mock) |
+| Auth guard | HST-013, 014 | Yes |
+| Search: fields, debounce, trim, escaping, deep link, combos | HST-020–043 | Yes ([AUTO-P0]: 020, 031, 032, 040). 026 is data-dependent. |
+| Status filter: free options, server rules, bad params | HST-050–063 | Yes ([AUTO-P0]: 051, 052 with PC-E). Pending is **N/A (Premium)**. |
+| Label / platform filter, pill, label delete | HST-070–085 | Yes |
+| Sorting, inverted time columns, invalid params, a11y name | HST-090–101 | Yes |
+| Edit columns: persist, cancel, fail, per-user | HST-102–111 | Yes |
+| Export CSV | HST-120–127 | Yes |
+| Empty states and bad page params | HST-128, 130–134 | Yes ([AUTO-P0]: 128; 131 via mock) |
 | Pagination | HST-140–142 | **N/A (data)**: < 50 hosts |
-| Selection + bulk delete | HST-150–165 | ✅ (🤖P0: 158). 165 is **N/A (data)**. |
+| Selection + bulk delete | HST-150–165 | Yes ([AUTO-P0]: 158). 165 is **N/A (data)**. |
 | Transfer / bulk Run script | HST-166, 167 | **N/A (Premium)** / **Out of scope** |
-| Add hosts, enroll secrets, gear menu, deep-link modals | HST-168–176 | ✅ (Activity automations is Premium; checked disabled) |
-| Roles | HST-180–183 | ✅ (PC-F) |
-| Accessibility | HST-190–194 | ✅ |
-| Navigation to details | HST-200–202 | ✅ (🤖P0: 200) |
+| Add hosts, enroll secrets, gear menu, deep-link modals | HST-168–176 | Yes (Activity automations is Premium; checked disabled) |
+| Roles | HST-180–183 | Yes (PC-F) |
+| Accessibility | HST-190–194 | Yes |
+| Navigation to details | HST-200–202 | Yes ([AUTO-P0]: 200) |
 | Fleets dropdown, Fleet/MDM columns, MDM/low-disk/bootstrap filters | Absence checked in HST-001, 004 | **N/A (Premium/MDM)** |
 
 ### 3.2 Host details page
 
 | Requirement area | Cases | Free preview |
 |---|---|---|
-| Routes, redirects, tab URLs, 404/500 | DET-001–015 | ✅ (🤖P0: 005). Controls is **N/A (MDM)**. |
-| Back to all hosts (filteredHostsPath) | DET-020–024 | ✅ |
-| Header + summary, Online history | DET-030–038 | ✅ (🤖P0: 030, 031) |
-| Refetch: online, offline, timeout, error | DET-040–046 | ✅ (043/044 via mock) |
-| Actions menu | DET-050–056 | ✅. Live report and Run script are **out of scope**. Lock/Wipe etc. are **N/A**. |
-| Delete: cancel, confirm, toast, redirect, re-enroll, concurrency | DET-060–068 | ✅ (🤖P0: 061, 062) |
-| Tabs (free), badge, platform hiding | DET-070–074 | ✅ (🤖P0: 070, 073). 074 is **N/A (data)**. |
-| Vitals | DET-080–085 | ✅ (🤖P0: 081) |
-| Labels / Activity / User / Agent options / Local users / Certs | DET-086–095 | ✅. Certs are **N/A**. |
-| Software inventory | DET-100–117 | ✅ (🤖P0: 100, 102, 103). Library is **N/A (Premium)**. |
-| Reports tab | DET-120–123 | ✅ (render/empty). Destinations are **out of scope**. |
-| Policies tab + modal | DET-130–133 | ✅ |
-| Roles / a11y | DET-140–144 | ✅ |
-| Cross-page / environment | XPG-001–008 | ✅ (🤖P0: XPG-001) |
+| Routes, redirects, tab URLs, 404/500 | DET-001–015 | Yes ([AUTO-P0]: 005). Controls is **N/A (MDM)**. |
+| Back to all hosts (filteredHostsPath) | DET-020–024 | Yes |
+| Header + summary, Online history | DET-030–038 | Yes ([AUTO-P0]: 030, 031) |
+| Refetch: online, offline, timeout, error | DET-040–046 | Yes (043/044 via mock) |
+| Actions menu | DET-050–056 | Yes. Live report and Run script are **out of scope**. Lock/Wipe etc. are **N/A**. |
+| Delete: cancel, confirm, toast, redirect, re-enroll, concurrency | DET-060–068 | Yes ([AUTO-P0]: 061, 062) |
+| Tabs (free), badge, platform hiding | DET-070–074 | Yes ([AUTO-P0]: 070, 073). 074 is **N/A (data)**. |
+| Vitals | DET-080–085 | Yes ([AUTO-P0]: 081) |
+| Labels / Activity / User / Agent options / Local users / Certs | DET-086–095 | Yes. Certs are **N/A**. |
+| Software inventory | DET-100–117 | Yes ([AUTO-P0]: 100, 102, 103). Library is **N/A (Premium)**. |
+| Reports tab | DET-120–123 | Yes (render/empty). Destinations are **out of scope**. |
+| Policies tab + modal | DET-130–133 | Yes |
+| Roles / a11y | DET-140–144 | Yes |
+| Cross-page / environment | XPG-001–008 | Yes ([AUTO-P0]: XPG-001) |
 
 ### 3.3 Explicitly not covered
 
@@ -225,14 +225,14 @@ This subset gives the most risk coverage per minute and is stable on a fresh pre
 8. **DET-030, DET-031, DET-070, DET-073**: header/status vs the API; tabs render
 9. **DET-081**: Vitals vs the API
 10. **DET-100, DET-102, DET-103**: software count, search, no-match
-11. **DET-061**, then **DET-062** 💥: delete cancel, then confirm (toast, redirect, API 404 right afterwards)
+11. **DET-061**, then **DET-062** [DESTRUCTIVE]: delete cancel, then confirm (toast, redirect, API 404 right afterwards)
 
 **Next (P1) wave:**
 - HST-059 (unknown status)
 - HST-091/093 (sort)
 - HST-103/104/106 (edit columns)
 - HST-120–122 (export)
-- HST-159 💥 (bulk delete confirm)
+- HST-159 [DESTRUCTIVE] (bulk delete confirm)
 - HST-071/073 (labels)
 - HST-181/DET-140 (observer)
 - DET-020/022 (back keeps filters)
