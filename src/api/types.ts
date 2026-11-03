@@ -72,3 +72,9 @@ export interface LoginResponse {
   token: string;
   user: { id: number; email: string; name: string; settings?: { hidden_host_columns?: string[] } };
 }
+
+export interface FleetErrorBody {
+  message: string;
+  errors: Array<{ name: string; reason: string }>;
+  uuid?: string;
+}

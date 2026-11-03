@@ -9,6 +9,9 @@
     "test:ui": "playwright test --ui",
     "test:smoke": "playwright test --grep @smoke",
     "test:destructive": "playwright test --project=destructive",
+    "test:api": "playwright test --project=api",
+    "test:api:destructive": "playwright test --project=api-destructive --no-deps",
+    "test:ui-only": "playwright test --project=setup --project=chromium --project=destructive",
     "report": "playwright show-report",
     "typecheck": "tsc --noEmit"
   },

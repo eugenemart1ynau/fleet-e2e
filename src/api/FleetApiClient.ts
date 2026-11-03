@@ -1,4 +1,4 @@
-import { APIRequestContext, request } from '@playwright/test';
+import { APIRequestContext, APIResponse, request } from '@playwright/test';
 import { apiPrefix, env } from '../config/env';
 import type {
   Host,
@@ -7,6 +7,13 @@ import type {
   ListHostsParams,
   LoginResponse,
 } from './types';
+
+export type QueryParams = Record<string, string | number | boolean>;
+export interface RawRequestOptions {
+  params?: QueryParams;
+  data?: unknown;
+  headers?: Record<string, string>;
+}
 
 /**
  * Thin typed client for the Fleet REST API. Used as the *oracle* in UI tests:
@@ -21,7 +28,7 @@ export class FleetApiClient {
 
   static async login(email = env.email, password = env.password, baseURL = env.baseURL): Promise<FleetApiClient> {
     const anon = await request.newContext({ baseURL });
-    const res = await anon.post(`${apiPrefix}/login`, { data: { email, password } });
+    const res = await FleetApiClient.postLoginWithBackoff(anon, email, password);
     if (!res.ok()) {
       const body = await res.text();
       await anon.dispose();
@@ -29,15 +36,71 @@ export class FleetApiClient {
     }
     const json = (await res.json()) as LoginResponse;
     await anon.dispose();
+    return FleetApiClient.withToken(json.token, json.user.id, baseURL);
+  }
+
+  /** Client that sends an arbitrary bearer token (valid, expired, garbage) on every request. */
+  static async withToken(token: string, userId = 0, baseURL = env.baseURL): Promise<FleetApiClient> {
     const ctx = await request.newContext({
       baseURL,
-      extraHTTPHeaders: { Authorization: `Bearer ${json.token}` },
+      extraHTTPHeaders: { Authorization: `Bearer ${token}` },
     });
-    return new FleetApiClient(ctx, json.token, json.user.id);
+    return new FleetApiClient(ctx, token, userId);
+  }
+
+  /** Client with no Authorization header — for 401 checks and the login endpoint itself. */
+  static async anonymous(baseURL = env.baseURL): Promise<FleetApiClient> {
+    const ctx = await request.newContext({ baseURL });
+    return new FleetApiClient(ctx, '', 0);
   }
 
   async dispose(): Promise<void> {
     await this.ctx.dispose();
+  }
+
+  // ---- Raw helpers: return the APIResponse untouched so API tests can assert status/body. ----
+  // Paths are relative to /api/latest/fleet (e.g. '/hosts/1').
+
+  get(path: string, opts: RawRequestOptions = {}): Promise<APIResponse> {
+    return this.ctx.get(`${apiPrefix}${path}`, opts);
+  }
+
+  post(path: string, opts: RawRequestOptions = {}): Promise<APIResponse> {
+    return this.ctx.post(`${apiPrefix}${path}`, opts);
+  }
+
+  patch(path: string, opts: RawRequestOptions = {}): Promise<APIResponse> {
+    return this.ctx.patch(`${apiPrefix}${path}`, opts);
+  }
+
+  delete(path: string, opts: RawRequestOptions = {}): Promise<APIResponse> {
+    return this.ctx.delete(`${apiPrefix}${path}`, opts);
+  }
+
+  /** Raw login (no throw) — for negative auth tests. Retries only on 429 rate limiting. */
+  rawLogin(email: string, password: string): Promise<APIResponse> {
+    return FleetApiClient.postLoginWithBackoff(this.ctx, email, password);
+  }
+
+  /**
+   * Fleet rate-limits POST /login per IP and answers 429 "limit exceeded, retry after: Ns".
+   * Parallel workers + negative auth tests hit it easily, so back off and retry on 429 only.
+   */
+  private static async postLoginWithBackoff(
+    ctx: APIRequestContext,
+    email: string,
+    password: string,
+    maxAttempts = 8,
+  ): Promise<APIResponse> {
+    let res!: APIResponse;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      res = await ctx.post(`${apiPrefix}/login`, { data: { email, password } });
+      if (res.status() !== 429 || attempt === maxAttempts) return res;
+      const m = /retry after: (\d+(?:\.\d+)?)s/.exec(await res.text());
+      const waitMs = (m ? Number(m[1]) * 1000 : 1000) + 250 * attempt;
+      await new Promise((r) => setTimeout(r, waitMs));
+    }
+    return res;
   }
 
   private async getJson<T>(url: string, params?: Record<string, string | number | boolean>): Promise<T> {
