@@ -1,0 +1,21 @@
+{
+  "name": "fleet-e2e",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Playwright + TypeScript E2E tests for Fleet Hosts and Host details pages (fleetctl preview)",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:smoke": "playwright test --grep @smoke",
+    "test:destructive": "playwright test --project=destructive",
+    "report": "playwright show-report",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@types/node": "^22.10.0",
+    "dotenv": "^16.4.5",
+    "typescript": "^5.6.0"
+  }
+}
