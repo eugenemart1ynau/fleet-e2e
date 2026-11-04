@@ -104,7 +104,7 @@ Workers default to 2. The suite shares one preview and one admin user. Edit colu
 
 ## Commands
 
-All of these set `FORCE_COLOR` so the checkmarks stay colored.
+Each command prints one line per test, with a checkmark or a cross.
 
 | You want                                                                                 | Command                        |
 | ---------------------------------------------------------------------------------------- | ------------------------------ |
