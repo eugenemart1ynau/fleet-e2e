@@ -6,6 +6,12 @@ The goal is simple. If someone changes Hosts or host details, these tests should
 
 It runs against a fresh [`fleetctl preview`](https://fleetdm.com/docs/using-fleet/fleetctl-cli#fleetctl-preview). That is Fleet's free local sandbox: Docker, a few simulated hosts, and the preview login on [fleetdm.com/try-fleet](https://fleetdm.com/try-fleet). Premium and MDM controls are listed in [COVERAGE.md](./COVERAGE.md) and left alone, because preview cannot exercise them.
 
+## Start here
+
+`npm run test:smoke` is the priority pass: the checks that would hurt immediately if Hosts or host details broke. `npm test` is the full matrix, including the extra filters and the Chrome delete. Controls that leave these two pages, or that free preview cannot exercise, are left out on purpose. That list is [COVERAGE.md](./COVERAGE.md).
+
+Serial search and computer-name search run only when some enrolled host reports them. Simulated Linux hosts leave serial blank and copy the hostname into the computer name, so those cases skip on a preview that has no other machine. Prefix, UUID, and IP still run on the simulated Linux host.
+
 ## What we cover
 
 Two surfaces, and the controls that stay on them.
@@ -240,7 +246,9 @@ That command takes the screenshots, masks the enroll secret before saving, rebui
 
 `npm run typecheck` runs the suite project and [`tsconfig.tools.json`](./tsconfig.tools.json), which covers [`tools/coverage/`](tools/coverage). `npm run lint` is ESLint. `npm run format:check` is Prettier. `npm run format` writes the Prettier result.
 
-[`.github/workflows/check.yml`](./.github/workflows/check.yml) runs those three on push and pull request, on Node 20. It does not boot `fleetctl preview`. The browser suite stays on your machine.
+[`.github/workflows/check.yml`](./.github/workflows/check.yml) runs those three on push and pull request, on Node 20.
+
+[`.github/workflows/tests.yml`](./.github/workflows/tests.yml) boots `fleetctl preview` on the same events and runs the suite in order: API, smoke, regression, E2E, then the Chrome delete. It uses the published preview login. When a layer fails, the trace, the HTML report, and `preview.log` are uploaded for that layer.
 
 ## When setup fails
 
@@ -254,7 +262,6 @@ That command takes the screenshots, masks the enroll secret before saving, rebui
 - Turn on the authenticated `DELETE /hosts/:id` and `POST /hosts/delete` specs once a deleted host can be restored. They stay `test.fixme` until then. Re-enrollment is a new id.
 - Seed custom labels through the API so label-filter tests can cover a label we created, then clean it up.
 - A small data builder for labels and policies, with cleanup in fixtures. Populated Policies and Reports tables need that, and seeding them leaves these two pages, so it stays future work.
-- Run this suite in GitHub Actions against `fleetctl preview`. The workflow today typechecks, lints, and checks formatting.
 - An axe accessibility pass on both pages.
 
 Rows still marked planned in [COVERAGE.md](./COVERAGE.md) are the SHOULD items. Back navigation and the in-scope Hosts controls are already covered.
