@@ -38,6 +38,7 @@ test.describe('Hosts page – Add hosts', () => {
         await expect.poll(async () => modal.innerText()).not.toBe(before);
       }
 
+      // Settings leaves Hosts. See it, do not follow it.
       const settings = modal.getByRole('link', { name: /settings|manage enroll/i });
       if (await settings.count()) await expect(settings.first()).toBeVisible();
 

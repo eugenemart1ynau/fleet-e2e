@@ -28,6 +28,7 @@ test.describe('Host details – vitals', () => {
       for (const [label, value] of pairs) {
         const row = hostDetailsPage.vital(label);
         await expect(row, label).toBeVisible();
+        // Blank and "---" are empty on preview. Only a real value has to match the API.
         if (value && value !== '---') await expect(row, label).toContainText(value);
       }
       for (const label of ['Added to Fleet', 'Last restarted', 'Memory', 'Disk space available']) {

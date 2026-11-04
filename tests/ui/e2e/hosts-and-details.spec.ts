@@ -22,11 +22,13 @@ test.describe('Hosts and host details', () => {
       const host = await api.getHost(linuxHost.id);
       const software = await api.getHostSoftware(linuxHost.id);
 
+      // Empty storage: this journey signs in itself.
       await loginPage.goto();
       await loginPage.login(env.email, env.password);
       await page.waitForLoadState('load');
       await hostsPage.goto();
 
+      // Online filter, then the simulated Linux host.
       await hostsPage.filterByStatus('Online hosts');
       await expect(page).toHaveURL(/status=online/);
       await expect(hostsPage.heading).toBeVisible();
@@ -45,6 +47,7 @@ test.describe('Hosts and host details', () => {
       expect(shown.length, 'host has a label chip besides All Hosts and All Linux').toBeGreaterThan(0);
       await hostDetailsPage.expectOneLabelVisible(shown);
 
+      // Open Delete and dismiss it. Confirm stays in the destructive spec.
       await hostDetailsPage.actionsDropdown.click();
       const del = hostDetailsPage.actionOption('Delete');
       await expect(del).toBeVisible();
@@ -54,6 +57,7 @@ test.describe('Hosts and host details', () => {
       await hostDetailsPage.deleteModal.expectClosed();
       expect(await api.getHostStatusCode(host.id)).toBe(200);
 
+      // Policies and Reports are empty on free preview. Software count comes from the API.
       await hostDetailsPage.openTab('Policies');
       await expect(page).toHaveURL(new RegExp(`/hosts/${host.id}/policies`));
       await expect(hostDetailsPage.policiesCount()).toBeVisible();
@@ -69,6 +73,7 @@ test.describe('Hosts and host details', () => {
       expect(software.count, 'host has not reported software yet').toBeGreaterThan(0);
       await expect(hostDetailsPage.softwareCount(software.count)).toBeVisible();
 
+      // Back must keep status=online, then Sign out must block /hosts/manage.
       await hostDetailsPage.backToAllHosts();
       await expect(page).toHaveURL(/\/hosts\/manage/);
       await expect(page).toHaveURL(/status=online/);

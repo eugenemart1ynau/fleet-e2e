@@ -142,6 +142,7 @@ test.describe('Hosts page – platform / label filter', () => {
     await expect(page).toHaveURL(/\/hosts\/manage\/labels\/\d+/);
     await expect(page.getByRole('heading', { name: /edit label/i })).toHaveCount(0);
     const edit = hostsPage.editLabelControl();
+    // Visible is enough. Clicking it opens the label editor.
     if (await edit.count()) await expect(edit.first()).toBeVisible();
   });
 });

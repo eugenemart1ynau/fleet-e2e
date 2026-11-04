@@ -17,6 +17,7 @@ test.describe('Hosts page – status filter', () => {
     await expect(page).toHaveURL(/status=new/);
 
     const count = await api.countHosts({ status: 'new' });
+    // New, Offline, Missing, and Enrolled are often empty on preview.
     if (count === 0) {
       await expect(hostsPage.emptyState).toContainText('No hosts match your filters');
     } else {

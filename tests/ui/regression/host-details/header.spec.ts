@@ -51,6 +51,7 @@ test.describe('Host details – header & summary', () => {
     await hostDetailsPage.pageGoto(`/hosts/${linuxHost.id}/not-a-tab`);
     const notFound = hostDetailsPage.notFoundCopy();
     await expect(notFound.or(hostDetailsPage.displayName)).toBeVisible();
+    // A 404 must not also render a host. If Fleet keeps the host page, the header is enough.
     if (await notFound.isVisible()) await expect(hostDetailsPage.displayName).toHaveCount(0);
     else await expect(hostDetailsPage.displayName).toBeVisible();
   });

@@ -74,6 +74,7 @@ test.describe('Hosts page – search', () => {
     { tag: '@regression' },
     async ({ hostsPage, api, linuxHost }) => {
       const fleet = await api.listAllHosts();
+      // Simulated Linux has no serial, and its computer name is the hostname.
       const serialHost = fleet.find((h) => h.hardware_serial.trim() !== '');
       const namedHost = fleet.find((h) => h.computer_name.trim() !== '' && h.computer_name !== h.hostname);
       expect(linuxHost.hostname.length, 'linux hostname').toBeGreaterThanOrEqual(3);

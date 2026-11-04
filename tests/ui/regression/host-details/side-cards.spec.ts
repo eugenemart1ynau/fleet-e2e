@@ -24,6 +24,7 @@ test.describe('Host details – Activity / Labels / User cards', () => {
       await expect(page).toHaveURL(new RegExp(`/hosts/${host.id}/details`));
 
       const users = host.users as Array<{ username?: string }>;
+      // A username is shown when the API has one. Otherwise the heading is the empty state.
       if (users.some((u) => u.username)) {
         await expect(page.getByText(users.find((u) => u.username)!.username!).first()).toBeVisible();
       } else {
@@ -38,6 +39,7 @@ test.describe('Host details – Activity / Labels / User cards', () => {
       const upcoming = (await upcomingRes.json()) as ActivitiesResponse;
       const pastEmpty = past.activities == null || past.activities.length === 0;
       const upcomingEmpty = upcoming.activities == null || upcoming.activities.length === 0;
+      // Both feeds empty: the empty copy. A row only needs the heading.
       if (pastEmpty && upcomingEmpty) await expect(hostDetailsPage.activityCopy()).toBeVisible();
       else await expect(hostDetailsPage.activityHeading).toBeVisible();
     },
@@ -54,6 +56,7 @@ test.describe('Host details – Activity / Labels / User cards', () => {
     async ({ hostDetailsPage, linuxHost, page }) => {
       await hostDetailsPage.goto(linuxHost.id);
       const card = hostDetailsPage.agentOptionsHeading;
+      // The card is not on every preview host. When it is, we do not edit it.
       if (await card.count()) await expect(card.first()).toBeVisible();
       await expect(page).toHaveURL(new RegExp(`/hosts/${linuxHost.id}/details`));
     },

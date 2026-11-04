@@ -185,6 +185,7 @@ test.describe('API: status filter @api', () => {
           'filtered ⊆ all',
           (h) => h.id,
         );
+        // new, missing, and mia are overlays. The host's own status stays online or offline.
         if (status === 'online' || status === 'offline') {
           expectEvery(
             filtered,
@@ -366,6 +367,7 @@ test.describe('API: search (?query=) @api', () => {
   test('query combined with status=online narrows both ways', { tag: '@regression' }, async ({ api, knownHost }) => {
     const res = await api.listHosts({ query: knownHost.uuid, status: 'online' });
     expect(res.map((h) => h.id)).toEqual(knownHost.status === 'online' ? [knownHost.id] : []);
+    // The opposite status must exclude this host. An offline host has nothing to exclude.
     if (knownHost.status === 'online') {
       expect(await api.listHosts({ query: knownHost.uuid, status: 'offline' })).toEqual([]);
     }

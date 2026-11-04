@@ -28,6 +28,7 @@ test.describe('Host details – delete host @destructive', () => {
 
       await hostDetailsPage.goto(victim.id);
 
+      // Cancel first, on a spare host, so a failed confirm cannot delete the read-only host.
       await hostDetailsPage.openAction('Delete');
       await hostDetailsPage.deleteModal.expectOpen();
       await hostDetailsPage.deleteModal.cancel.click();

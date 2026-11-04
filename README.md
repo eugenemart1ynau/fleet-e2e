@@ -212,7 +212,7 @@ Set `COVERAGE_NO_OPEN=1` to write the file and leave it closed. To open the last
 open coverage-dashboard/index.html
 ```
 
-The page is the spec map, not the last Playwright run. A green run does not mean an unlisted control was tested. Read-only UI is counted once, even though those specs run in Chrome, Firefox, and Safari. The kinds are smoke, regression, the one journey, the Chrome delete, and the API deletes that are written but not run.
+The page is the spec map, not the last Playwright run. A green run does not mean an unlisted control was tested. Read-only UI is counted once, even though those specs run in Chrome, Firefox, and Safari. The kinds are smoke, regression, the one journey, the Chrome delete, and the API deletes that are written but not run. The overview opens with the total number of tests and names every control: covered, seen and not followed, or left out.
 
 The views are overview bars, Hosts and host details with screenshots, journeys, API groups, what was left out, and all tests. Click a region on a screenshot to read that test. Journey steps and API group chips jump to that step or group. The All tests box filters by title, action, and why.
 

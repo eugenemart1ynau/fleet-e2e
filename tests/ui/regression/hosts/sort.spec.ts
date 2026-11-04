@@ -4,6 +4,7 @@ import { HostsPage } from '../../../../src/pages/HostsPage';
 import { FleetApiClient } from '../../../../src/api/FleetApiClient';
 import { withHostColumnLock } from '../../../../src/utils/columnLock';
 
+// invert: the first click on a relative-time column sorts the opposite way.
 const SORTS: Array<{ label: string; key: string; invert?: boolean }> = [
   { label: 'Host', key: 'display_name' },
   { label: 'Last fetched', key: 'detail_updated_at', invert: true },
@@ -92,6 +93,7 @@ async function sortEveryHeader(hostsPage: HostsPage, api: FleetApiClient, page: 
     expect(osKey, 'Operating system').toBeTruthy();
     await expectSortedNames(hostsPage, api, page, 'Operating system', osKey!);
 
+    // Agent is a sort button only on some Fleet builds.
     const agent = hostsPage.columnHeaderButton('Agent');
     if (await agent.count()) {
       await hostsPage.clickSortHeader('Agent');
@@ -102,6 +104,7 @@ async function sortEveryHeader(hostsPage: HostsPage, api: FleetApiClient, page: 
       await expectSortedNames(hostsPage, api, page, 'Agent', key!, false);
     }
 
+    // These headers are labels, not sort buttons.
     for (const label of ['Status', 'User email', 'CPU']) {
       const th = hostsPage.columnHeaderCell(label);
       await expect(th, label).toBeVisible();

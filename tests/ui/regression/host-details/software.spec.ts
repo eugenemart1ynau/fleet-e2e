@@ -63,6 +63,7 @@ test.describe('Host details – software inventory', () => {
         .filter(Boolean);
       expect(names).toEqual(sorted.software.map((s) => s.name));
 
+      // The title link goes to the next page. Check the href and stay here.
       const link = hostDetailsPage.softwareTitleLinks().first();
       await expect(link).toBeVisible();
       await expect(link).toHaveAttribute('href', /.+/);

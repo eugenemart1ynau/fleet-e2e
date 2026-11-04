@@ -54,6 +54,7 @@ test.describe('Hosts page – row selection', () => {
       await expect(hostsPage.headerCheckbox).toHaveAttribute('aria-checked', 'mixed');
       const banner = hostsPage.selectionBanner();
       await expect(banner).toContainText('1 selected');
+      // Run script stays enabled and is not clicked.
       await expect(hostsPage.runScriptButton).toBeEnabled();
 
       await hostsPage.clearSelectionButton.click();

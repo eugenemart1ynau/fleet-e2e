@@ -30,6 +30,7 @@
 
   function pageMatch(test, page) {
     if (page === 'all') return true;
+    if (page === 'ui') return test.layer === 'ui';
     if (page === 'api') return test.layer === 'api';
     if (page === 'hosts') return test.area === 'hosts' || test.area === 'cross';
     if (page === 'host-details') return test.area === 'host-details' || test.area === 'cross';
@@ -128,14 +129,120 @@
   }
 
   function bar(segments) {
-    const total = segments.reduce((sum, seg) => sum + seg.count, 0) || 1;
     return `<div class="bar">${segments
       .filter((seg) => seg.count > 0)
-      .map((seg) => {
-        const label = seg.count >= 8 ? String(seg.count) : '';
-        return `<a class="seg ${esc(seg.className)}" style="flex:${seg.count}" href="${esc(seg.href)}" title="${esc(seg.title)}: ${seg.count}">${label}</a>`;
-      })
+      .map(
+        (seg) =>
+          `<a class="seg ${esc(seg.className)}" style="flex:${seg.count}" href="${esc(seg.href)}" title="${esc(seg.title)}: ${seg.count}">${seg.count}</a>`,
+      )
       .join('')}</div>`;
+  }
+
+  function controlTotals() {
+    const tally = { covered: 0, boundary: 0, 'out-of-scope': 0 };
+    for (const control of data.controls) tally[control.coverage] += 1;
+    return tally;
+  }
+
+  function testsForControl(controlId) {
+    const ids = new Set();
+    for (const screen of data.screens) {
+      for (const hot of screen.hotspots) {
+        if (hot.controlId !== controlId) continue;
+        for (const id of hot.testIds) ids.add(id);
+      }
+    }
+    return ids.size;
+  }
+
+  function firstPlace(controlId) {
+    for (const screen of data.screens) {
+      const hot = screen.hotspots.find((item) => item.controlId === controlId);
+      if (hot) return { screen, hot };
+    }
+    return null;
+  }
+
+  function controlHref(control) {
+    if (control.coverage !== 'covered') return '#gaps';
+    const place = firstPlace(control.id);
+    if (place) return placeHash(place.screen, place.hot);
+    if (control.page === 'host-details') return '#details';
+    if (control.page === 'session') return '#journeys';
+    return '#hosts';
+  }
+
+  function testWord(count) {
+    return count === 1 ? 'test' : 'tests';
+  }
+
+  function scoreboard() {
+    const ui = data.tests.filter((test) => test.layer === 'ui').length;
+    const apiCount = data.tests.filter((test) => test.layer === 'api').length;
+    const totals = controlTotals();
+    const kinds = data.kindCounts
+      .map(
+        (item) =>
+          `<a class="score score-kind" href="#tests/${item.kind}/all"><b>${item.count}</b><span>${esc(item.label)}</span></a>`,
+      )
+      .join('');
+    return `<section class="scoreboard" aria-label="Totals">
+      <a class="score score-total" href="#tests/all/all"><b>${data.tests.length}</b><span>Total tests</span></a>
+      <a class="score" href="#tests/all/ui"><b>${ui}</b><span>UI tests</span></a>
+      <a class="score" href="#api"><b>${apiCount}</b><span>API tests</span></a>
+      <a class="score" href="#overview"><b>${totals.covered}</b><span>Controls covered</span></a>
+      <a class="score" href="#gaps"><b>${totals.boundary}</b><span>Seen, not followed</span></a>
+      <a class="score" href="#gaps"><b>${totals['out-of-scope']}</b><span>Left out</span></a>
+    </section>
+    <div class="score-kinds">${kinds}</div>`;
+  }
+
+  function inventory() {
+    const pages = [
+      ['hosts', 'Hosts'],
+      ['host-details', 'Host details'],
+      ['session', 'Session'],
+    ];
+    const kinds = [
+      ['covered', 'Covered'],
+      ['boundary', 'Seen, not followed'],
+      ['out-of-scope', 'Left out'],
+    ];
+    return pages
+      .map(([page, label]) => {
+        const cols = kinds
+          .map(([coverage, title]) => {
+            const rows = data.controls.filter((control) => control.page === page && control.coverage === coverage);
+            const body = rows.length
+              ? rows
+                  .map((control) => {
+                    const count = testsForControl(control.id);
+                    const meta =
+                      control.coverage === 'out-of-scope'
+                        ? '<span class="meta">not tested</span>'
+                        : `<span class="meta">${count} ${testWord(count)}</span>`;
+                    return `<a class="inv-row" href="${esc(controlHref(control))}"><strong>${esc(control.label)}</strong><span class="why">${esc(control.summary)}</span>${meta}</a>`;
+                  })
+                  .join('')
+              : '<p class="note">None</p>';
+            return `<div class="inv-col"><h3>${esc(title)} <span class="meta">${rows.length}</span></h3>${body}</div>`;
+          })
+          .join('');
+        return `<section class="card inv"><h2>${label}</h2><div class="inv-grid">${cols}</div></section>`;
+      })
+      .join('');
+  }
+
+  function shotLegend() {
+    return `<div class="legend shot-legend"><span><i class="sw seg covered"></i>Solid box: covered</span><span><i class="sw seg boundary"></i>Dashed box: seen, not followed</span><span>The number matches the list under the image</span></div>`;
+  }
+
+  function screenTally(screen) {
+    const covered = screen.hotspots.filter((hot) => hot.coverage === 'covered').length;
+    const boundary = screen.hotspots.filter((hot) => hot.coverage === 'boundary').length;
+    const parts = [`${covered} covered`];
+    if (boundary) parts.push(`${boundary} not followed`);
+    return `<p class="tally">${screen.hotspots.length} regions on this screen: ${parts.join(', ')}</p>`;
   }
 
   function nav(current) {
@@ -216,7 +323,8 @@
       : '';
     return shell(
       'overview',
-      `<section class="grid-2">
+      `${scoreboard()}
+      <section class="grid-2">
         <article class="card">
           <h2>Tests by kind</h2>
           <p class="sub">Smoke is the one happy path in an area. Regression is the rest of the read-only cases. The journey is one cross-page session. Destructive runs once, in Chrome, after the read-only browsers. Written-not-run is specified and intentionally not executed.</p>
@@ -227,7 +335,7 @@
           ${controlRow('hosts', 'Hosts')}
           ${controlRow('host-details', 'Host details')}
           ${controlRow('session', 'Session')}
-          <div class="legend"><span><i class="sw seg covered"></i>Covered</span><span><i class="sw seg boundary"></i>Boundary</span><span><i class="sw seg out-of-scope"></i>Out of scope</span></div>
+          <div class="legend"><a href="#overview"><i class="sw seg covered"></i>Covered ${controlTotals().covered}</a><a href="#gaps"><i class="sw seg boundary"></i>Seen, not followed ${controlTotals().boundary}</a><a href="#gaps"><i class="sw seg out-of-scope"></i>Left out ${controlTotals()['out-of-scope']}</a></div>
         </article>
         <article class="card">
           <h2>Why this set exists</h2>
@@ -235,6 +343,7 @@
           <div class="risks">${risks}</div>
         </article>
       </section>
+      ${inventory()}
       <section class="grid-2" style="margin-top:16px">
         <article class="card"><h2>Every UI smoke test</h2><div class="smoke-col">${smokeList('ui')}</div></article>
         <article class="card"><h2>Every API smoke test</h2><div class="smoke-col">${smokeList('api')}</div></article>
@@ -271,15 +380,26 @@
       })
       .join('');
     const hot = screen.hotspots.find((item) => item.id === selected);
+    const regionList = screen.hotspots
+      .map((item, index) => {
+        const control = data.controls.find((entry) => entry.id === item.controlId);
+        const summary = control ? control.summary : '';
+        const count = item.testIds.length;
+        const followed = item.coverage === 'boundary' ? ' · not followed' : '';
+        return `<a class="inv-row" href="#${current}/${screen.id}/${item.id}"><strong>${index + 1}. ${esc(item.label)}</strong><span class="why">${esc(summary)}</span><span class="meta">${count} ${testWord(count)}${followed}</span></a>`;
+      })
+      .join('');
     const drawer = hot
-      ? `<h2>${esc(hot.label)}</h2><p class="sub">${hot.coverage === 'boundary' ? 'This control is on screen. The test checks it and does not follow it.' : 'Tests that land on this region.'}</p>${hot.testIds.map((id) => testCard(tests.get(id))).join('')}`
-      : `<h2>${esc(screen.title)}</h2><p class="sub">${esc(screen.blurb)}</p><p class="note">${esc(screen.route)}</p><p class="note">Select a numbered region to read the Action, Checks, and Why.</p>`;
+      ? `<h2>${esc(hot.label)}</h2><p class="sub">${hot.coverage === 'boundary' ? 'This control is on screen. The test checks it and does not follow it.' : 'Tests that land on this region.'}</p><p class="note">${hot.testIds.length} ${testWord(hot.testIds.length)}</p>${hot.testIds.map((id) => testCard(tests.get(id))).join('')}`
+      : `<h2>${esc(screen.title)}</h2><p class="sub">${esc(screen.blurb)}</p><p class="note">${esc(screen.route)}</p>${regionList}`;
     return shell(
       current,
       `<div class="chips">${chips}</div>
       <div class="screen-layout">
         <div>
           ${picture}
+          ${shotLegend()}
+          ${screenTally(screen)}
           <div class="regions">${regions}</div>
           <p class="sub" style="margin-top:8px">${esc(screen.blurb)} <span class="meta">${esc(screen.route)}</span></p>
         </div>
@@ -323,6 +443,8 @@
         <div>
           <div class="steps">${steps}</div>
           ${picture}
+          ${shotLegend()}
+          <p class="tally">Step ${step.n} of ${journey.steps.length}${hot && hot.coverage === 'boundary' ? ': seen, not followed' : ': covered'}</p>
           <p class="sub">${esc(screen.blurb)}</p>
         </div>
         <aside class="drawer">
@@ -348,10 +470,11 @@
   function api() {
     const current = hashParts().a;
     const groups = apiGroups();
+    const apiCount = data.tests.filter((test) => test.layer === 'api').length;
     const chips = groups
       .map(
         (group) =>
-          `<a class="chip" href="#api/${esc(group.id)}" ${group.id === current ? 'aria-pressed="true"' : ''}>${esc(group.title)}</a>`,
+          `<a class="chip" href="#api/${esc(group.id)}" ${group.id === current ? 'aria-pressed="true"' : ''}>${esc(group.title)} (${group.testIds.length})</a>`,
       )
       .join('');
     const body = groups
@@ -362,10 +485,16 @@
           .join('')}</section>`;
       })
       .join('');
-    return shell('api', `<div class="chips">${chips}</div>${body}`);
+    return shell(
+      'api',
+      `<p class="sub">${apiCount} API tests in ${groups.length} groups. Written-not-run is included and marked as specified, not executed.</p><div class="chips">${chips}</div>${body}`,
+    );
   }
 
   function gaps() {
+    const boundaryCount = data.controls.filter((control) => control.coverage === 'boundary').length;
+    const leftOutCount = data.controls.filter((control) => control.coverage === 'out-of-scope').length;
+    const writtenCount = data.tests.filter((test) => test.kind === 'written-not-run').length;
     const block = (coverage, title, copy) => {
       const rows = data.controls
         .filter((control) => control.coverage === coverage)
@@ -383,10 +512,10 @@
     return shell(
       'gaps',
       `<div class="grid-2">
-        ${block('boundary', 'On screen, not followed', 'The control is visible. A test names it and stops. That is not coverage of the next page.')}
-        ${block('out-of-scope', 'Left out on purpose', 'Free preview cannot reach these, or following them leaves Hosts and host details. Pagination is the exception: the UI needs 50 hosts, and the API still checks the page params.')}
+        ${block('boundary', `On screen, not followed (${boundaryCount})`, 'The control is visible. A test names it and stops. That is not coverage of the next page.')}
+        ${block('out-of-scope', `Left out on purpose (${leftOutCount})`, 'Free preview cannot reach these, or following them leaves Hosts and host details. Pagination is the exception: the UI needs 50 hosts, and the API still checks the page params.')}
       </div>
-      <section class="group"><h2>Written, not run</h2><p class="sub">Authenticated deletes are specified and marked test.describe.fixme. Fleet cannot restore that same host id.</p>${written}</section>`,
+      <section class="group"><h2>Written, not run (${writtenCount})</h2><p class="sub">Authenticated deletes are specified and marked test.describe.fixme. Fleet cannot restore that same host id.</p>${written}</section>`,
     );
   }
 
@@ -400,6 +529,7 @@
       ['hosts', 'Hosts'],
       ['host-details', 'Host details'],
       ['session', 'Session'],
+      ['ui', 'UI layer'],
       ['api', 'API layer'],
     ];
     const kindChips = kinds
@@ -427,7 +557,7 @@
       `<div class="filters">
         <input id="q" type="search" placeholder="Filter by title, action, or why" value="${esc(query)}" aria-label="Filter tests">
         ${kindChips}${pageChips}
-        <span class="note">${rows.length} tests</span>
+        <span class="note">Showing ${rows.length} of ${data.tests.length}</span>
       </div><div id="results">${catalogBody(rows)}</div>`,
     );
   }
@@ -459,7 +589,7 @@
         const { a, b } = hashParts();
         const rows = filtered(a || 'all', b || 'all');
         const hold = document.querySelector('.filters .note');
-        if (hold) hold.textContent = `${rows.length} tests`;
+        if (hold) hold.textContent = `Showing ${rows.length} of ${data.tests.length}`;
         const results = document.getElementById('results');
         if (results) results.innerHTML = catalogBody(rows);
       });
