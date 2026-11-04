@@ -1,0 +1,85 @@
+---
+description: Tag every Playwright test as smoke, regression, or destructive
+globs: tests/**/*.ts
+alwaysApply: false
+---
+
+# Test tags
+
+Tag every test when you add or edit it. Playwright merges a describe tag onto every child, so `@smoke` and `@regression` go on the test, never on `test.describe`.
+
+## Which tag
+
+Each read-only test gets exactly one of these, via `{ tag }`:
+
+- `@smoke` — the one check in that area that would hurt immediately. Happy path only.
+- `@regression` — everything else: extra filters, bad input, 404s, pagination, empty states.
+
+A test that deletes a host gets `@destructive` on the describe instead. Do not also add `@smoke` or `@regression`. That tag is how the `destructive` and `api-destructive` projects select it. Authenticated API deletes stay `test.describe.fixme`.
+
+API describes in `tests/api/*.api.spec.ts` keep `@api` in the describe title. That is the only tag that belongs on the describe, along with `@destructive`.
+
+In a loop, pick the tag from the case: `` tag: status === 'online' ? '@smoke' : '@regression' ``.
+
+## API test comments
+
+Every `test.describe`, every `test(`, and every loop that generates tests in `tests/api` gets a block comment on the line above it. Three lines, specific to that block. Do not restate the title.
+
+```ts
+/**
+ * Call: GET /hosts?query={hostname} and GET /hosts/count with the same query.
+ * Checks: the known host is in the list, the list is no longer than the full fleet, and count equals the list length.
+ * Why: searching the visible hostname is the primary lookup.
+ */
+```
+
+A describe names the endpoints in the group and the page they back. Mention a skip or footgun only when that group has one. A loop lists each case in one block above the `for`.
+
+## UI test comments
+
+Every `test.describe` and every `test(` in `tests/ui/**/*.spec.ts` gets the same three-line block, with **Action** instead of **Call**. `test.describe.configure` gets no block. The login setup project stays untagged. Smoke specs live in `tests/ui/smoke`, regression specs in `tests/ui/regression`. The one cross-page journey lives in `tests/ui/e2e/hosts-and-details.spec.ts` and is `@regression`. The host delete lives in `tests/ui/destructive` and is `@destructive` only.
+
+```ts
+/**
+ * Action: open /hosts/manage.
+ * Checks: the count and display names match GET /hosts, and the URL has order_key=display_name.
+ * Why: this is the table an operator sees on load.
+ */
+```
+
+## Example
+
+```ts
+/**
+ * Call: GET /hosts?query= and GET /hosts/count?query=.
+ * Checks: an exact hostname and a query that matches nothing.
+ * Why: the Hosts search box.
+ */
+test.describe('API: search @api', () => {
+  /**
+   * Call: GET /hosts?query={hostname}.
+   * Checks: that host is the result.
+   * Why: the primary lookup.
+   */
+  test('exact hostname returns that host', { tag: '@smoke' }, async ({ api }) => {});
+
+  /**
+   * Call: GET /hosts?query= with a string that matches no host.
+   * Checks: the list is empty.
+   * Why: the Hosts empty state.
+   */
+  test('no match returns an empty list', { tag: '@regression' }, async ({ api }) => {});
+});
+
+// UI delete. @destructive stays on the describe and on the test. No smoke or regression tag.
+test.describe('Host details – delete host @destructive', () => {
+  /**
+   * Action: confirm Delete on a spare host.
+   * Checks: that host id is 404.
+   * Why: confirm must actually delete.
+   */
+  test('confirm deletes the host', { tag: '@destructive' }, async ({ api }) => {});
+});
+```
+
+`npm run test:smoke` is UI plus API `@smoke`. `npm run test:api:smoke` and `npm run test:api:regression` are the API subsets.

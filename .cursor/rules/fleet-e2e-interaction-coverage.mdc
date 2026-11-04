@@ -1,0 +1,41 @@
+---
+description: In-scope Hosts and host-details controls every test change must account for
+alwaysApply: true
+---
+
+# Hosts and host-details interaction coverage
+
+Page boundaries stay in `fleet-e2e-scope.mdc`. This rule is the control list. A new or edited spec must map to a row here, and `COVERAGE.md` must say covered or out of scope.
+
+Tag read-only additions `@regression` on the test. `@smoke` stays the one happy path already in `tests/ui/smoke`. Comment shape is Action / Checks / Why in `test-tags.mdc`.
+
+Assert results against `FleetApiClient`. Button state means enabled, disabled, loading label, selected (`aria-selected` or the URL), empty, and error. Do not assert hover color or focus-ring pixels.
+
+## Cover on Hosts
+
+- Search: clear, prefix, UUID, primary IP, serial, computer name, case, whitespace, literal `%` and `_`, search plus Online, search plus a platform label.
+- Status: All hosts clears `status`. Enrolled hosts sets `status=enrolled` and matches the count. A bad `?status=` does not crash.
+- Sort: each sortable header once, including Operating system, after showing hidden columns, then restore `hidden_host_columns`. Operating system uses the `order_key` the click writes. Last fetched, Last seen, Last restarted, and Added to Fleet invert direction before the API compare. Status, User email, and CPU are not sort buttons. Hold `withHostColumnLock` around any hidden-column change.
+- Edit columns: Cancel and Escape discard a toggle. Showing a hidden column persists until the test restores the previous setting. Host cannot be hidden.
+- Add hosts: Close and Escape stay on `/hosts/manage`. The empty-state Add hosts opens the same modal. Each platform tab changes the instructions. The secret text matches `GET /spec/enroll_secret`. Do not POST a secret and do not read the clipboard. Do not follow a Settings link.
+- Platform labels other than Linux: macOS, Windows, ChromeOS, iOS, iPadOS, Android, and the builtin labels (Apple Silicon macOS hosts, ARM-based Windows hosts, Debian-based Linux hosts, x86-based Windows hosts). Filter by label name narrows that menu and stays on Hosts. Choosing the selected platform again leaves `/labels/:id`. The platform menu has no All hosts row. Label plus Online, label plus a query, label plus a no-match query, and an unknown label id. Do not click an edit-label control or Add label.
+- Export while a status filter is on, and export while a platform label is on. After a no-match search the Export hosts button is hidden.
+- One row checkbox, the on-page header checkbox, and Clear selection. One row sets the header checkbox to mixed and shows "1 selected". Selecting the page shows that count and "All hosts on this page are selected". Run script stays enabled and is not clicked. Delete then Cancel and Escape. The host stays. Do not confirm. Do not use `filters: {}`.
+- Operating system, status, and disk space on each row match `GET /hosts`.
+- Hosts page settings: Enroll secrets opens, the secret value matches `GET /spec/enroll_secret`, and Done closes it on `/hosts/manage`. Do not click Add secret. Activity automations stays disabled on free preview. Do not click Custom host vitals.
+
+## Cover on host details
+
+- Each tab click sets the URL and `aria-selected`. Each tab URL loads that tab. A bad tab path does not crash.
+- Back with no filter returns to `/hosts/manage`. Back while a search query is set keeps `query`.
+- Refetch shows "Fetching fresh vitals" and is not clickable again while that label is up. Do not wait for the agent.
+- Actions lists Delete. Escape on Delete closes the modal and the host stays. Query, Run script, Transfer, Lock, Unlock, Wipe, and MDM items are named in `COVERAGE.md` and not clicked. Confirm stays the spare-host `@destructive` test.
+- Vitals, label chips, the user row, and both activity feeds match `GET /hosts/:id` (empty copy when the list is null or empty). Do not click a label chip or cancel an activity.
+- Agent options, when the card is present. Do not edit it if that leaves the page.
+- Software search clear. A Name sort button, when present, matches the software API. A software-title link is not clicked. Install and Software library are not used.
+- Policies and Reports stay on the empty-copy tests. A populated table is not required: preview has no policies and `pack_stats` is null.
+- A missing numeric host id shows Fleet's 404 page. `/hosts/abc` and `/hosts/0` do not render a host.
+
+## Do not automate
+
+Top nav and the account menu, except Sign out at the end of the e2e journey. No other account-menu item is clicked. Pending hosts, the Fleet column, MDM columns. Pagination and select-all-matching (page size is 50). Run script. The label editor, including Add label. Dashboard filter URLs (`policy_id`, `software_id`, `mdm_id`, `low_disk_space`). Host-details modals other than Delete. A second confirm, a bulk confirm, and `POST /spec/enroll_secret`. New API specs.

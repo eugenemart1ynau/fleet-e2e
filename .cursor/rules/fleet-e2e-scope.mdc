@@ -1,0 +1,34 @@
+---
+description: Assignment scope for Fleet Hosts and host details automation
+alwaysApply: true
+---
+
+# Fleet Hosts assignment scope
+
+This repo automates Fleet Hosts and host details only. Follow this boundary on every change. Do not expand into Design QA, Linear filing, or other product surfaces.
+
+## In scope
+
+- **Hosts** — `http://localhost:1337/hosts/manage` (`/hosts/manage`). Anything that stays on this page.
+- **Host details** — the page reached by clicking a host. Tabs stay in scope: `/hosts/:id/details`, `/software/inventory`, `/policies`, `/reports`.
+- **Still this page:** the platform/label filter at `/hosts/manage/labels/:id`; modals that do not navigate away (Add hosts, Edit columns, Delete, Enroll secrets); CSV export.
+- **Stack** — Playwright with TypeScript. Run against a fresh `fleetctl preview` (defaults in `.env.example`: `` / `REDACTED#`).
+
+## Out of scope
+
+- **Running scripts**, including when the control is on Hosts or host details.
+- **The next page after a click.** Label editor, a single policy or query, a software title, script run, settings. Stop at the control that would navigate there. Do not add a page object, spec, or API coverage for that destination.
+- Premium or MDM-only controls that free preview cannot exercise. Record them in `COVERAGE.md` as out of scope.
+
+## What to automate
+
+Cover every in-scope control in `fleet-e2e-interaction-coverage.mdc`. Do not add a test for a control that rule marks out of scope.
+
+## Docs and defects
+
+- Keep `README.md` current: how to run, what was automated and why, and what to do next with more time.
+- Update `COVERAGE.md` when coverage changes (covered, not covered, and why).
+- If AI tools were used, say so in the README.
+- File bugs and product questions as GitHub issues in this repo. Do not file them in Linear.
+
+Living record: `README.md` and `COVERAGE.md`.

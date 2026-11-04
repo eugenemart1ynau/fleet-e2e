@@ -1,86 +1,203 @@
 # fleet-e2e
 
-Playwright + TypeScript end-to-end tests for two Fleet pages, run against a fresh `fleetctl preview`:
+This repo is a Playwright + TypeScript suite for two pages in [Fleet](https://fleetdm.com): the host inventory, and the host you land on when you click a row.
 
-- **Hosts** — `http://localhost:1337/hosts/manage`
-- **Host details** — `/hosts/:id/*`, opened by clicking a host
+The goal is simple. If someone changes Hosts or host details, these tests should say whether an operator can still see the fleet, find a host, trust the facts on the page, and delete a host without surprises. Every check compares the screen (or the HTTP response) to what Fleet's API returns on this run. Nothing is pinned to a laptop name, a host count, or a screenshot from last week.
 
-## Prerequisites
+It runs against a fresh [`fleetctl preview`](https://fleetdm.com/docs/using-fleet/fleetctl-cli#fleetctl-preview). That is Fleet's free local sandbox: Docker, a few simulated hosts, and the public preview login. Premium and MDM controls are listed in [COVERAGE.md](./COVERAGE.md) and left alone, because preview cannot exercise them.
 
-- Node 20+ (tested on Node 22)
-- Docker with Fleet preview running:
-  ```bash
-  fleetctl preview          # login:  / REDACTED#
-  # when finished:
-  fleetctl preview stop
-  ```
+## What we cover
 
-## Run
+Two surfaces, and the controls that stay on them.
+
+- **Hosts** at `http://localhost:1337/hosts/manage`. Search, status, platform and builtin labels, sort, edit columns, export, row selection, Add hosts, and the page-settings enroll-secrets modal.
+- **Host details** after you click a host. The Details, Software, Policies, and Reports tabs. Vitals, side cards, refetch, the Actions menu, and Delete.
+- **Still this page:** `/hosts/manage/labels/:id`, and modals that close without sending you somewhere else.
+
+We stop at a control that would leave. A software title, a policy, a query, the label editor, script run, and settings are out. So are Run script, Transfer, Lock, Unlock, Wipe, and MDM items: the tests can see the name, and they do not click it. The account menu is out too, except Sign out at the end of the one full journey.
+
+The living list of what is automated, planned, or out of scope is [COVERAGE.md](./COVERAGE.md).
+
+## What you need
+
+- Node 20 or newer
+- Docker, running
+- [`fleetctl`](https://fleetdm.com/docs/using-fleet/fleetctl-cli) on your PATH
+
+Preview's published login is `` / `REDACTED#`. Those are the defaults in [`.env.example`](./.env.example) and in `src/config/env.ts`. You only need a `.env` file if your preview is somewhere else.
+
+## First run
+
+Start the sandbox and leave that terminal open. The first start downloads images and can take a few minutes. Simulated hosts enroll after Fleet is up, and the Linux host needs a moment to report software.
+
+```bash
+fleetctl preview
+```
+
+In another terminal, from this repo:
 
 ```bash
 npm ci
-npx playwright install chromium
-cp .env.example .env      # optional; defaults match fleetctl preview
-
-npm test                  # api + setup -> chromium (read-only) -> destructive -> api-destructive
-npm run test:api          # API only (no browser, read-only, ~30-50s)
-npm run test:api:destructive  # API DELETE /hosts/:id (deletes one simulated Linux host)
-npm run test:ui-only      # UI projects only
-npm run test:smoke        # @smoke only (UI + API)
-npm run test:headed
-npm run test:ui
-npm run report            # open last HTML report (traces kept on failure)
-npm run typecheck
+npx playwright install chromium firefox webkit
+cp .env.example .env   # optional
+npm test
 ```
 
-## Architecture
+`npm test` is the whole suite. A healthy preview with a handful of hosts usually finishes in a few minutes. Global setup prints a line like this when it is willing to start:
+
+```text
+[global-setup] Fleet ready at http://localhost:1337: 8 hosts (8 online), 102 software titles on <linux-host>
+```
+
+When you are done with the sandbox:
+
+```bash
+fleetctl preview stop
+```
+
+## How a full run moves
+
+Playwright does not throw every file at the browser at once. [`playwright.config.ts`](./playwright.config.ts) splits the work into projects.
+
+1. **Global setup** polls `GET /healthz`, logs in through the API, and waits until there are at least `MIN_HOSTS` hosts, one of them an online simulated Linux host, and that host has reported software. If preview is down, or the agent has not reported software yet, setup fails with that reason. Software tests used to skip on an empty inventory. They now expect titles, so setup waits for them.
+2. **API project** talks to `/api/latest/fleet` with no browser. It checks status codes, error envelopes, filters, search, CSV export, labels, and column settings. It does not include the tests tagged `@destructive`.
+3. **Setup project** logs in through the real login form once and writes `.auth/admin.json`. Chrome, Firefox, and Safari reuse that session.
+4. **Chrome, Firefox, and Safari** run the read-only UI together: `tests/ui/smoke`, `tests/ui/regression`, and the one journey in `tests/ui/e2e`. Safari here is Playwright's WebKit. Chrome is Desktop Chrome (Chromium).
+5. **Destructive project** runs after those three browsers, in Chrome only. It deletes one spare online Linux host. Retries are off, so a failed assertion cannot delete a second host on the way down.
+6. **API destructive project** runs last. Those specs are `test.describe.fixme`. They document authenticated delete calls and do not remove a host, because Fleet cannot put the same id back. Re-enrollment creates a new one.
+
+Locally, retries are 0, so a flake fails the first time. If `CI` is set, read-only projects retry twice. The delete project stays at 0 either way.
+
+Workers default to 2. The suite shares one preview and one admin user. Edit columns is a single saved setting (`hidden_host_columns`), so those tests take a file lock at `.auth/host-columns.lock`. Other tests still assume the default columns. Keep `WORKERS` at 1 or 2. Four workers against one preview is how login starts returning 429. The API client already backs off on 429, and a quieter worker count is the better fix.
+
+## Commands
+
+All of these set `FORCE_COLOR` so the checkmarks stay colored.
+
+| You want | Command |
+|---|---|
+| Everything | `npm test` |
+| Read-only API only | `npm run test:api` |
+| API happy paths | `npm run test:api:smoke` |
+| API extras, without the smoke rows | `npm run test:api:regression` |
+| API delete specs (they are `fixme` and do not delete) | `npm run test:api:destructive` |
+| All UI, including the Chrome delete at the end | `npm run test:ui-only` |
+| UI smoke, three browsers, no delete | `npm run test:ui:smoke` |
+| UI regression, three browsers, no delete | `npm run test:ui:regression` |
+| The one Hosts and host-details journey, three browsers, no delete | `npm run test:ui:e2e` |
+| Anything tagged `@smoke`, API and UI | `npm run test:smoke` |
+| Host delete. Also runs the three read-only browsers first, because delete waits for them | `npm run test:destructive` |
+| Watch the browser | `npm run test:headed` |
+| Playwright's UI mode | `npm run test:ui` |
+| Open the last HTML report | `npm run report` |
+| Typecheck, no tests | `npm run typecheck` |
+| Rebuild the coverage atlas page | `npm run coverage` |
+| Photograph preview, then rebuild the atlas | `npm run coverage:shots` |
+
+A single file, one browser, no retry:
+
+```bash
+npx playwright test tests/ui/smoke/hosts/search.spec.ts --project=chrome --retries=0
+```
+
+`--project=chrome` still runs the login setup it depends on. To poke at one test while you write it, add `--headed`.
+
+`npm run test:ui` opens Playwright's interactive runner. It is not the UI suite. The UI suite is `npm run test:ui-only` and the `test:ui:*` scripts above.
+
+## What the tests are trying to prove
+
+Priority, in order: you can see the inventory, you can find a host, you can triage by status, the facts on a host match the API, and delete either leaves the host alone or removes the one you chose.
+
+Read-only UI uses the first online simulated Linux host (`pickLinuxHost` in `src/utils/hostPicker.ts`). That host is the same shape on every machine. The delete test picks a different online Linux host, the last spare by id, and fails if there is no spare. After confirm, it asserts the old id is 404. Preview's agent comes back as a new id, so the test does not claim the hostname is gone forever.
+
+Assertions that would print an enroll secret use a boolean membership check (`expectIncluded`). A failure says the secret did not match. It does not paste the secret into the HTML report.
+
+Each read-only test carries one tag, on the test itself:
+
+- `@smoke` is the one happy path for that area.
+- `@regression` is the rest: empty states, bad ids, combined filters, deep links.
+- `@destructive` sits on the delete describe. Those tests do not also wear smoke or regression.
+
+Above every UI test is a three-line comment: Action, Checks, Why. API tests use Call, Checks, Why. The coverage atlas reads those comments. If you add a test, write the comment and add a row to `COVERAGE.md`.
+
+Locators live in the page objects. Role, placeholder, or visible text first. A CSS hook only when Fleet has no accessible name (react-select menus, a few modal classes). Specs should call the page object instead of querying the DOM themselves.
+
+## Layout
 
 ```
-playwright.config.ts        projects: api, api-destructive (browserless, *.api.spec.ts);
-                            setup -> chromium -> destructive (UI); retries, trace on failure
+playwright.config.ts          projects, timeouts, trace on failure
 src/
-  config/env.ts             BASE_URL / FLEET_EMAIL / FLEET_PASSWORD etc. with preview defaults
-  global-setup.ts           readiness gate: /healthz, API login, wait for enrolled + online Linux hosts
-  api/FleetApiClient.ts     typed REST client = test oracle (login, listHosts, countHosts, getHost,
-                            getHostSoftware, deleteHost, refetchHost, waitForHosts, setHiddenHostColumns)
-                            + raw get/post/patch/delete, anonymous(), withToken(), rawLogin() (429 backoff)
-  api/assertions.ts         expectStatus, expectJson, expectFleetError (Fleet error envelope), expectEvery
-  api/types.ts              API response shapes (Fleet v4.94)
-  pages/                    Page Objects: LoginPage, HostsPage, HostDetailsPage, components/DeleteHostModal
-  fixtures/index.ts         UI `test`: api (worker-scoped), page objects, linuxHost
-  fixtures/api.ts           API `test`: api (admin, worker), anonApi (no auth), allHosts, knownHost
-  utils/apiData.ts          missingHostId(), ids() helpers
-  utils/hostPicker.ts       prefers simulated Linux hosts over the local Mac
+  config/env.ts               BASE_URL, login, workers, readiness. Preview defaults if .env is absent
+  global-setup.ts             health, hosts, and software before any project starts
+  api/FleetApiClient.ts       the oracle: login, hosts, software, labels, columns, enroll secret
+  api/assertions.ts           status, JSON, Fleet error envelope, secret-safe membership
+  api/types.ts                response shapes
+  fixtures/index.ts           UI test: page objects, api, linuxHost
+  fixtures/api.ts             API test: admin client, anonymous client, all hosts
+  fixtures/apiClient.ts       shared login for those fixtures
+  pages/                      LoginPage, HostsPage, HostDetailsPage, DeleteHostModal
+  utils/hostPicker.ts         simulated Linux, not the Mac running Docker
+  utils/apiData.ts            no-match queries, missing ids, CSV parse
+  utils/columnLock.ts         one-at-a-time edit-columns
 tests/
-  api/                      *.api.spec.ts: auth, hosts list/count/status/search, host details + software,
-                            hosts-delete (@destructive, own project)
-  setup/auth.setup.ts       UI login once -> .auth/admin.json (storageState, token cookie)
-  hosts/                    list, search, status filter
-  host-details/             header/tabs, vitals, software, delete (@destructive)
+  api/                        auth, hosts, host details, hosts-delete (fixme for real deletes)
+  ui/setup/auth.setup.ts      one UI login, saved to .auth/admin.json
+  ui/smoke/                   one happy path per area
+  ui/regression/              the rest of the in-scope controls
+  ui/e2e/hosts-and-details.spec.ts
+                              login, Online filter, open the Linux host, Software, Back, Sign out
+  ui/destructive/host-details/delete-host.spec.ts
+                              cancel, then confirm, on a spare Linux host
+tools/coverage/               builds the atlas from the Action/Call comments
 ```
 
-Design decisions:
+Timeouts in the Playwright config: 60 seconds for a test, 10 seconds for an assertion, 15 seconds for an action, 30 seconds for a navigation. The "click every column header" sort test raises its own timeout to 3 minutes.
 
-- **API as oracle.** UI assertions compare against what the API returns *now* (counts, names, OS), so tests don't hard-code host data that differs per machine.
-- **Auth once.** A setup project logs in through the real UI and saves `storageState`; all tests reuse it. The API client logs in separately with a Bearer token.
-- **Readiness gate.** Fresh preview instances take minutes to enroll hosts; global setup polls and fails with a clear message instead of N timeouts.
-- **Host choice.** Tests use simulated Linux hosts (identical on every machine, disposable) rather than the developer's Mac.
-- **Destructive isolation.** Delete tests are tagged `@destructive` and run in their own project *after* the read-only suite. They target a different host than read-only tests. Preview agents re-enroll after delete, so tests assert the old id returns 404 rather than "gone forever".
-- **API layer.** API specs (`tests/api/*.api.spec.ts`, tag `@api`) run in their own browserless project and use `src/fixtures/api.ts`, so they never need the UI login. They check contract and data rules (status codes, error envelopes, filter/search/count consistency) directly, while the UI suite keeps using the same client as its oracle. `/login` is rate-limited by Fleet (429), so login helpers back off on 429.
-- **Locators.** Fleet has almost no `data-testid`s; locators are role/placeholder/text first, with a few documented CSS hooks (`.table-count`, `td.display_name__cell a`, `.modal__modal_container`) centralized in page objects.
+On failure, Playwright keeps a trace, a screenshot, and a video. `npm run report` opens them. API projects turn trace, screenshot, and video off.
 
-## What's automated and why
+## Configuration
 
-See [COVERAGE.md](./COVERAGE.md). Priority: what would hurt most if it broke — seeing the fleet inventory, finding a host, triaging by status, trusting a host's data, and destructive actions behaving safely.
+Copy [`.env.example`](./.env.example) to `.env` when you need to override. Both files are the public preview values.
 
-## Next with more time
+| Variable | Default | What it does |
+|---|---|---|
+| `BASE_URL` | `http://localhost:1337` | Preview origin. No trailing slash required |
+| `FLEET_EMAIL` | `` | Preview admin |
+| `FLEET_PASSWORD` | `REDACTED#` | Preview admin password |
+| `MIN_HOSTS` | `2` | How many enrolled hosts setup waits for |
+| `READINESS_TIMEOUT_MS` | `180000` | How long setup waits for Fleet, hosts, and software |
+| `WORKERS` | `2` | Playwright workers. Stay at 1 or 2 on one preview |
+| `CI` | unset | When set, read-only retries become 2 and `test.only` fails the run |
 
-- SHOULD items in COVERAGE.md: sort, edit columns persistence, export CSV vs API, bulk delete, back-navigation memory, Refetch
-- Seed custom labels via API for label filter tests
-- Data-builder layer (create labels/policies via API, clean up in fixtures)
-- CI workflow spinning up `fleetctl preview` in GitHub Actions
-- axe accessibility smoke on both pages
+`.env`, `.auth/` (the saved login and the column lock), `test-results/`, `playwright-report/`, and `*.pkg` are gitignored. A downloaded osquery installer from the Add hosts modal does not belong in the repo.
+
+## Coverage atlas
+
+`npm run coverage` writes `coverage-dashboard/index.html` and opens it. The page is a map of every test: smoke, regression, the journey, the Chrome delete, and the API deletes that are written but not run. Read-only UI is counted once, even though it runs in three browsers. The text comes from the Action/Call, Checks, and Why comments, not from the last green run.
+
+`npm run coverage:shots` needs preview. It photographs the pages, masks the enroll secret before saving, and does not confirm Delete or post a secret. Hotspot boxes are measured on the live page. The masked screenshots in `coverage-dashboard/screens/` are safe to keep, so the page is readable without preview. After a Fleet layout change, run the shots again.
+
+## When setup fails
+
+- **Fleet not healthy at `/healthz`.** Preview is not up, or Docker is not. Start `fleetctl preview` and wait until the UI loads in a browser.
+- **Timed out waiting for hosts.** The simulated agents have not enrolled yet. Give preview another minute and run again, or raise `READINESS_TIMEOUT_MS`.
+- **Linux host reported no software.** The same host the UI reads has an empty inventory. Setup will not skip past that. Wait for the agent, then rerun.
+- **429 on login.** Too many workers, or another suite is logging in to the same preview. Set `WORKERS=1`.
+
+## Next, with more time
+
+- Turn on the authenticated `DELETE /hosts/:id` and `POST /hosts/delete` specs once a deleted host can be restored. They stay `test.fixme` until then. Re-enrollment is a new id.
+- Seed custom labels through the API so label-filter tests can cover a label we created, then clean it up.
+- A small data builder for labels and policies, with cleanup in fixtures. Populated Policies and Reports tables need that, and seeding them leaves these two pages, so it stays future work.
+- A GitHub Actions workflow that boots `fleetctl preview` and runs this suite.
+- An axe accessibility pass on both pages.
+
+Rows still marked planned in [COVERAGE.md](./COVERAGE.md) are the SHOULD items. Back navigation and the in-scope Hosts controls are already covered.
+
+## Writing rules
+
+[`.cursor/rules/`](./.cursor/rules) is the short version of how to add a test: stay on these two pages, tag the test, put locators in the page objects, and assert against `FleetApiClient`. Bugs and product questions for this suite go in GitHub issues on this repo.
 
 ## AI disclosure
 
-AI tooling was used to help scaffold this framework and read Fleet source for expected behavior; all tests were run and reviewed against a live preview.
+AI tooling was used to help scaffold this framework and to read Fleet source for expected behavior. The tests were run and reviewed against a live preview.

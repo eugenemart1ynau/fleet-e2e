@@ -1,0 +1,32 @@
+---
+description: How Fleet Hosts tests stay valid on a fresh fleetctl preview
+alwaysApply: true
+---
+
+# Preview-safe Hosts tests
+
+Follow these when adding or changing tests. Page boundaries are in `fleet-e2e-scope.mdc`.
+
+## API is the oracle
+
+Assert counts, names, OS, and status against `FleetApiClient` for this run. Do not hard-code host names, counts, or the developer’s Mac.
+
+## Tags
+
+Every new or edited test gets a tag. Read-only tests use `{ tag: '@smoke' }` or `{ tag: '@regression' }` on the test itself, not on `test.describe`. `@smoke` is the one happy-path check for that area. Host deletes use `@destructive` on the describe and no smoke or regression tag. Details are in `test-tags.mdc`.
+
+## Host choice
+
+- Read-only tests use `linuxHost` / `pickLinuxHost` (simulated Linux).
+- Destructive tests use a different host and tag `@destructive` so they run in the `destructive` and `api-destructive` projects after the read-only suite. The UI delete spec is `tests/ui/destructive`, not `tests/ui/e2e`.
+- Assert the old id is 404. Preview agents re-enroll, so do not assert the host is gone forever.
+
+## Where code goes
+
+- UI flows use `src/fixtures`, page objects in `src/pages/`, and specs under `tests/ui/smoke/`, `tests/ui/regression/`, `tests/ui/e2e/hosts-and-details.spec.ts`, or `tests/ui/destructive/`.
+- API specs (`tests/api/*.api.spec.ts`) only cover endpoints those two pages use.
+- Locators stay in page objects: role, placeholder, or text first. Use a CSS hook only when Fleet has no accessible name.
+
+## Why, not volume
+
+A new spec needs a `COVERAGE.md` row and has to be a control listed in `fleet-e2e-interaction-coverage.mdc`. Skip work that needs Premium, MDM, or 50+ hosts, and mark it out of scope there.

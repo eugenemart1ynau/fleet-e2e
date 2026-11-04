@@ -9,9 +9,20 @@ const describe = async (res: APIResponse): Promise<string> => {
 
 /** Assert an exact HTTP status; failure message includes method, URL and response body. */
 export async function expectStatus(res: APIResponse, status: number): Promise<void> {
-  if (res.status() !== status) {
-    expect(res.status(), `Expected ${status}. ${await describe(res)}`).toBe(status);
+  const actual = res.status();
+  if (actual !== status) {
+    expect(actual, `Expected ${status}. ${await describe(res)}`).toBe(status);
+    return;
   }
+  expect(actual).toBe(status);
+}
+
+/**
+ * Membership check that does not print `allowed` in the assertion diff.
+ * Use this for enroll secrets and other values that land in the HTML report.
+ */
+export function expectIncluded(actual: string | undefined, allowed: readonly string[], label: string): void {
+  expect(Boolean(actual) && allowed.includes(actual as string), label).toBe(true);
 }
 
 /** Assert status and return the parsed JSON body typed as T. */
@@ -56,6 +67,11 @@ export async function expectFleetError(
     expect(reasons).toMatch(expected.reason);
   }
   return body;
+}
+
+/** Fleet sends null, not [], when a host has no rows yet (activities, pack_stats). */
+export function expectNullOrArray(value: unknown, label: string): void {
+  expect(value === null || Array.isArray(value), label).toBe(true);
 }
 
 /** Every element satisfies `pred`; failure lists offending items. */

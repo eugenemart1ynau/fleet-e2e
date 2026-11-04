@@ -39,6 +39,8 @@ export interface Host {
 export interface HostDetail extends Host {
   labels: Array<{ id: number; name: string; label_type: string }>;
   policies: unknown[];
+  /** Reports tab. Null when the host has no scheduled reports yet. */
+  pack_stats?: unknown[] | null;
   users: unknown[];
   refetch_requested: boolean;
   config_tls_refresh?: number;
@@ -53,6 +55,8 @@ export interface ListHostsParams {
   order_direction?: 'asc' | 'desc';
   query?: string;
   status?: string;
+  /** Honored by GET /hosts/count and GET /labels/:id/hosts. Ignored by GET /hosts. */
+  label_id?: number;
 }
 
 export interface HostSoftware {
@@ -62,10 +66,38 @@ export interface HostSoftware {
   installed_versions?: Array<{ version: string }> | null;
 }
 
+export interface PageMeta {
+  has_next_results: boolean;
+  has_previous_results: boolean;
+}
+
 export interface HostSoftwareResponse {
   software: HostSoftware[];
   count: number;
-  meta: { has_next_results: boolean; has_previous_results: boolean };
+  meta: PageMeta;
+}
+
+export interface HostsResponse {
+  hosts: Host[];
+}
+
+export interface CountResponse {
+  count: number;
+}
+
+export interface HostResponse {
+  host: HostDetail & { software?: unknown[] };
+}
+
+/** Past activities are null until the host has any. Upcoming activities are an array. */
+export interface ActivitiesResponse {
+  activities: unknown[] | null;
+  meta: PageMeta;
+  count?: number;
+}
+
+export interface LabelsResponse {
+  labels: Label[];
 }
 
 export interface LoginResponse {
@@ -77,4 +109,18 @@ export interface FleetErrorBody {
   message: string;
   errors: Array<{ name: string; reason: string }>;
   uuid?: string;
+}
+
+export interface Label {
+  id: number;
+  name: string;
+  description?: string;
+  label_type: string;
+  label_membership_type?: string;
+  host_count?: number;
+  count?: number;
+}
+
+export interface EnrollSecretSpec {
+  spec: { secrets: Array<{ secret: string; created_at?: string }> };
 }
