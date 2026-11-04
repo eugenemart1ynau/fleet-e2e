@@ -24,7 +24,10 @@ export class HostDetailsPage extends BasePage {
     this.backButton = page.getByRole('button', { name: 'Back to all hosts' });
     this.refetchButton = page.getByRole('button', { name: /Refetch|Fetching fresh vitals/ });
     this.actionsDropdown = page.locator('button, [role="button"]').filter({ hasText: /^Actions$/ });
-    this.vitalsCard = page.locator('.card, section').filter({ has: page.getByText('Vitals', { exact: true }) }).first();
+    this.vitalsCard = page
+      .locator('.card, section')
+      .filter({ has: page.getByText('Vitals', { exact: true }) })
+      .first();
     this.softwareSearch = page.getByPlaceholder('Search by name or vulnerability (CVE)');
     this.activityHeading = page.getByText('Activity', { exact: true });
     this.labelsHeading = page.getByText('Labels', { exact: true });
@@ -152,12 +155,17 @@ export class HostDetailsPage extends BasePage {
 
   /** Waits until one of `names` is actually visible. */
   async expectOneLabelVisible(names: string[]): Promise<void> {
-    await expect.poll(async () => {
-      for (const name of names) {
-        if (await this.page.getByText(name, { exact: true }).first().isVisible()) return name;
-      }
-      return '';
-    }, { message: `expected one of ${names.join(', ')} on the Labels card` }).not.toBe('');
+    await expect
+      .poll(
+        async () => {
+          for (const name of names) {
+            if (await this.page.getByText(name, { exact: true }).first().isVisible()) return name;
+          }
+          return '';
+        },
+        { message: `expected one of ${names.join(', ')} on the Labels card` },
+      )
+      .not.toBe('');
   }
 
   async clickRefetch(): Promise<void> {

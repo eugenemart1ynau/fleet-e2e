@@ -14,11 +14,7 @@
   };
 
   function esc(value) {
-    return String(value)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+    return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
   function hashParts() {
@@ -49,7 +45,9 @@
       if (kind !== 'all' && test.kind !== kind) return false;
       if (!pageMatch(test, page)) return false;
       if (!q) return true;
-      return `${test.title} ${test.why} ${test.actionOrCall} ${test.checks} ${test.describeTitle}`.toLowerCase().includes(q);
+      return `${test.title} ${test.why} ${test.actionOrCall} ${test.checks} ${test.describeTitle}`
+        .toLowerCase()
+        .includes(q);
     });
   }
 
@@ -101,9 +99,12 @@
   }
 
   function testCard(test) {
-    const skips = test.skips.length ? `<p class="note">May skip on this preview: ${esc(test.skips.join('; '))}</p>` : '';
+    const skips = test.skips.length
+      ? `<p class="note">May skip on this preview: ${esc(test.skips.join('; '))}</p>`
+      : '';
     const loop = test.loopNote ? `<p class="note">${esc(test.loopNote)}</p>` : '';
-    const fileNote = test.fileNote && test.kind === 'written-not-run' ? `<p class="note">${esc(test.fileNote)}</p>` : '';
+    const fileNote =
+      test.fileNote && test.kind === 'written-not-run' ? `<p class="note">${esc(test.fileNote)}</p>` : '';
     const places = test.hotspotIds
       .map((id) => {
         const screen = data.screens.find((item) => item.hotspots.some((hot) => hot.id === id));
@@ -153,7 +154,9 @@
   }
 
   function shell(current, body) {
-    const shot = data.shotsCapturedAt ? `Screens captured ${data.shotsCapturedAt.slice(0, 16).replace('T', ' ')}` : 'Screens not captured yet';
+    const shot = data.shotsCapturedAt
+      ? `Screens captured ${data.shotsCapturedAt.slice(0, 16).replace('T', ' ')}`
+      : 'Screens not captured yet';
     return `<header class="top">
       <div>
         <h1>Coverage atlas</h1>
@@ -174,7 +177,10 @@
       title: item.label,
     }));
     const legend = data.kindCounts
-      .map((item) => `<a href="#tests/${item.kind}/all"><i class="sw ${kindClass[item.kind]}"></i>${esc(item.label)} ${item.count}</a>`)
+      .map(
+        (item) =>
+          `<a href="#tests/${item.kind}/all"><i class="sw ${kindClass[item.kind]}"></i>${esc(item.label)} ${item.count}</a>`,
+      )
       .join('');
     const controlRow = (page, label) => {
       const segs = ['covered', 'boundary', 'out-of-scope'].map((coverage) => {
@@ -182,7 +188,10 @@
         return {
           count: found ? found.count : 0,
           className: coverage,
-          href: coverage === 'covered' ? `#${page === 'host-details' ? 'details' : page === 'session' ? 'journeys' : 'hosts'}` : '#gaps',
+          href:
+            coverage === 'covered'
+              ? `#${page === 'host-details' ? 'details' : page === 'session' ? 'journeys' : 'hosts'}`
+              : '#gaps',
           title: `${label} ${coverage}`,
         };
       });
@@ -190,13 +199,17 @@
     };
     const risks = data.risks
       .map(
-        (risk) => `<article class="risk">${badge(risk.kind, risk.kind.replace(/-/g, ' '))}<strong>${esc(risk.title)}</strong><p>${esc(risk.why)}</p><p class="meta">${esc(risk.file)}</p></article>`,
+        (risk) =>
+          `<article class="risk">${badge(risk.kind, risk.kind.replace(/-/g, ' '))}<strong>${esc(risk.title)}</strong><p>${esc(risk.why)}</p><p class="meta">${esc(risk.file)}</p></article>`,
       )
       .join('');
     const smokeList = (layer) =>
       data.smoke
         .filter((item) => item.layer === layer)
-        .map((item) => `<div class="smoke-item"><div class="kicker">${esc(item.file)}</div><strong>${esc(item.title)}</strong><p class="why">${esc(item.why)}</p></div>`)
+        .map(
+          (item) =>
+            `<div class="smoke-item"><div class="kicker">${esc(item.file)}</div><strong>${esc(item.title)}</strong><p class="why">${esc(item.why)}</p></div>`,
+        )
         .join('');
     const skipText = data.skipNotes.length
       ? ` Some tests skip when this preview is not ready: ${data.skipNotes.map(esc).join(' · ')}`
@@ -236,7 +249,10 @@
     const screen = screens.get(hash.a) || list[0];
     const selected = hash.b || '';
     const chips = list
-      .map((item) => `<a class="chip" href="#${current}/${item.id}" ${item.id === screen.id ? 'aria-pressed="true"' : ''}>${esc(item.title)}</a>`)
+      .map(
+        (item) =>
+          `<a class="chip" href="#${current}/${item.id}" ${item.id === screen.id ? 'aria-pressed="true"' : ''}>${esc(item.title)}</a>`,
+      )
       .join('');
     const boxes = screen.hotspots
       .map((hot, index) => {
@@ -278,11 +294,15 @@
     const step = journey.steps.find((item) => String(item.n) === hash.b) || journey.steps[0];
     const screen = screens.get(step.screenId);
     const cards = data.journeys
-      .map((item) => `<a class="chip" href="#journeys/${item.id}" ${item.id === journey.id ? 'aria-pressed="true"' : ''}>${esc(item.title)}</a>`)
+      .map(
+        (item) =>
+          `<a class="chip" href="#journeys/${item.id}" ${item.id === journey.id ? 'aria-pressed="true"' : ''}>${esc(item.title)}</a>`,
+      )
       .join('');
     const steps = journey.steps
       .map(
-        (item) => `<a class="step" href="#journeys/${journey.id}/${item.n}" ${item.n === step.n ? 'aria-current="step"' : ''}><b>Step ${item.n}</b><br>${esc(item.text)}</a>`,
+        (item) =>
+          `<a class="step" href="#journeys/${journey.id}/${item.n}" ${item.n === step.n ? 'aria-current="step"' : ''}><b>Step ${item.n}</b><br>${esc(item.text)}</a>`,
       )
       .join('');
     const hot = screen.hotspots.find((item) => item.id === step.hotspotId);
@@ -356,7 +376,10 @@
         .join('');
       return `<article class="card"><h2>${title}</h2><p class="sub">${copy}</p>${rows}</article>`;
     };
-    const written = data.tests.filter((test) => test.kind === 'written-not-run').map((test) => testCard(test)).join('');
+    const written = data.tests
+      .filter((test) => test.kind === 'written-not-run')
+      .map((test) => testCard(test))
+      .join('');
     return shell(
       'gaps',
       `<div class="grid-2">
@@ -380,10 +403,16 @@
       ['api', 'API layer'],
     ];
     const kindChips = kinds
-      .map((item) => `<a class="chip" href="#tests/${item}/${page}" ${item === kind ? 'aria-pressed="true"' : ''}>${esc(item.replace(/-/g, ' '))}</a>`)
+      .map(
+        (item) =>
+          `<a class="chip" href="#tests/${item}/${page}" ${item === kind ? 'aria-pressed="true"' : ''}>${esc(item.replace(/-/g, ' '))}</a>`,
+      )
       .join('');
     const pageChips = pages
-      .map(([id, label]) => `<a class="chip" href="#tests/${kind}/${id}" ${id === page ? 'aria-pressed="true"' : ''}>${esc(label)}</a>`)
+      .map(
+        ([id, label]) =>
+          `<a class="chip" href="#tests/${kind}/${id}" ${id === page ? 'aria-pressed="true"' : ''}>${esc(label)}</a>`,
+      )
       .join('');
     const rows = filtered(kind, page);
     const groups = [];
@@ -405,7 +434,9 @@
 
   function render() {
     const { view } = hashParts();
-    const current = ['overview', 'hosts', 'details', 'journeys', 'api', 'gaps', 'tests'].includes(view) ? view : 'overview';
+    const current = ['overview', 'hosts', 'details', 'journeys', 'api', 'gaps', 'tests'].includes(view)
+      ? view
+      : 'overview';
     const html =
       current === 'hosts'
         ? screenView('hosts', 'hosts')

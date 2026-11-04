@@ -19,7 +19,8 @@ function isColumnSortResponse(url: string, orderKey?: string, previousKey?: stri
   }
 }
 
-export type StatusOption = 'All hosts' | 'Online hosts' | 'Offline hosts' | 'Missing hosts' | 'New hosts' | 'Enrolled hosts';
+export type StatusOption =
+  'All hosts' | 'Online hosts' | 'Offline hosts' | 'Missing hosts' | 'New hosts' | 'Enrolled hosts';
 
 /** /hosts/manage */
 export class HostsPage extends BasePage {
@@ -70,7 +71,14 @@ export class HostsPage extends BasePage {
 
   async goto(query: Record<string, string> = {}): Promise<void> {
     const qs = new URLSearchParams(query).toString();
-    await this.page.goto(`/hosts/manage${qs ? `?${qs}` : ''}`);
+    const url = `/hosts/manage${qs ? `?${qs}` : ''}`;
+    // A login redirect to /dashboard can cancel this navigation in WebKit. Try once more.
+    try {
+      await this.page.goto(url);
+    } catch (err) {
+      if (!String(err).includes('interrupted by another navigation')) throw err;
+      await this.page.goto(url);
+    }
     await this.waitForLoaded();
   }
 
@@ -144,8 +152,10 @@ export class HostsPage extends BasePage {
   async searchFor(text: string): Promise<void> {
     await this.search.fill(text);
     // input is debounced 500ms and synced into ?query=
-    if (text.trim()) await expect(this.page).toHaveURL(new RegExp(`query=${encodeURIComponent(text.trim())}`));
-    else await expect(this.page).not.toHaveURL(/query=/);
+    if (text.trim()) {
+      const query = encodeURIComponent(text.trim()).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      await expect(this.page).toHaveURL(new RegExp(`query=${query}`));
+    } else await expect(this.page).not.toHaveURL(/query=/);
   }
 
   async filterByStatus(option: StatusOption): Promise<void> {
@@ -153,7 +163,11 @@ export class HostsPage extends BasePage {
     await this.statusFilter.focus();
     await this.page.keyboard.press('ArrowDown');
     // Fleet's custom Option renders without role="option"; react-select still assigns ids "react-select-N-option-M".
-    await this.page.locator('[id*="-option-"]').filter({ hasText: new RegExp(`^${option}`) }).first().click();
+    await this.page
+      .locator('[id*="-option-"]')
+      .filter({ hasText: new RegExp(`^${option}`) })
+      .first()
+      .click();
     await this.waitForLoaded();
   }
 
@@ -163,7 +177,9 @@ export class HostsPage extends BasePage {
   }
 
   labelOption(name: string): Locator {
-    return this.labelMenu().locator('.label-filter-select__option').filter({ hasText: exactText(name) });
+    return this.labelMenu()
+      .locator('.label-filter-select__option')
+      .filter({ hasText: exactText(name) });
   }
 
   labelNameFilter(): Locator {
@@ -171,7 +187,9 @@ export class HostsPage extends BasePage {
   }
 
   editLabelControl(): Locator {
-    return this.page.getByRole('link', { name: /edit label/i }).or(this.page.getByRole('button', { name: /edit label/i }));
+    return this.page
+      .getByRole('link', { name: /edit label/i })
+      .or(this.page.getByRole('button', { name: /edit label/i }));
   }
 
   async openLabelMenu(): Promise<Locator> {

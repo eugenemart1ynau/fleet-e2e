@@ -15,7 +15,9 @@ export function pickLinuxHost(hosts: Host[], { exclude = [] as number[], require
     .filter((h) => !requireOnline || h.status === 'online')
     .sort((a, b) => a.id - b.id);
   if (!candidates.length) {
-    throw new Error(`No ${requireOnline ? 'online ' : ''}Linux host available. Saw: ${hosts.map((h) => `${h.display_name}(${h.platform}/${h.status})`).join(', ')}`);
+    throw new Error(
+      `No ${requireOnline ? 'online ' : ''}Linux host available. Saw: ${hosts.map((h) => `${h.display_name}(${h.platform}/${h.status})`).join(', ')}`,
+    );
   }
   return candidates[0];
 }

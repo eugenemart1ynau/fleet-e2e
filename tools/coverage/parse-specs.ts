@@ -60,17 +60,15 @@ function parseFile(filePath: string, root: string): TestCard[] {
 
   const commentOf = (node: ts.Node): string | undefined => {
     const ranges = ts.getLeadingCommentRanges(text, node.getFullStart()) ?? [];
-    const blocks = ranges.filter(
-      (r) => r.kind === ts.SyntaxKind.MultiLineCommentTrivia && r.end <= node.getStart(sf),
-    );
+    const blocks = ranges.filter((r) => r.kind === ts.SyntaxKind.MultiLineCommentTrivia && r.end <= node.getStart(sf));
     const last = blocks[blocks.length - 1];
     return last ? text.slice(last.pos, last.end) : undefined;
   };
 
-  const fail = (node: ts.Node, message: string): never => {
+  function fail(node: ts.Node, message: string): never {
     const pos = sf.getLineAndCharacterOfPosition(node.getStart(sf));
     throw new Error(`${rel}:${pos.line + 1} ${message}`);
-  };
+  }
 
   const record = (call: ts.CallExpression, own: ParsedComment | null, title: string, tag: string) => {
     const parsed = own ?? ctx.loopComment;
@@ -253,7 +251,8 @@ function isTestCall(expr: ts.Expression): boolean {
 
 function describeKind(expr: ts.Expression): 'describe' | 'fixme' | null {
   if (!ts.isPropertyAccessExpression(expr)) return null;
-  if (expr.name.text === 'describe' && ts.isIdentifier(expr.expression) && expr.expression.text === 'test') return 'describe';
+  if (expr.name.text === 'describe' && ts.isIdentifier(expr.expression) && expr.expression.text === 'test')
+    return 'describe';
   if (
     expr.name.text === 'fixme' &&
     ts.isPropertyAccessExpression(expr.expression) &&
@@ -410,7 +409,11 @@ function areaOf(rel: string): Area {
   return 'hosts';
 }
 
-function place(rel: string, tag: string, fixme: boolean): { suite: Suite; kind: Kind; projects: string[]; browsers: string[] } {
+function place(
+  rel: string,
+  tag: string,
+  fixme: boolean,
+): { suite: Suite; kind: Kind; projects: string[]; browsers: string[] } {
   const suite: Suite | null = rel.includes('/ui/smoke/')
     ? 'smoke'
     : rel.includes('/ui/regression/')
@@ -433,7 +436,8 @@ function place(rel: string, tag: string, fixme: boolean): { suite: Suite; kind: 
   else kind = 'regression';
 
   if (suite === 'smoke' && tag !== '@smoke') throw new Error(`${rel} smoke folder test is tagged ${tag}`);
-  if (suite === 'destructive' && tag !== '@destructive') throw new Error(`${rel} destructive folder test is tagged ${tag}`);
+  if (suite === 'destructive' && tag !== '@destructive')
+    throw new Error(`${rel} destructive folder test is tagged ${tag}`);
   if ((suite === 'regression' || suite === 'e2e') && tag === '@destructive') {
     throw new Error(`${rel} read-only folder has a @destructive test`);
   }
@@ -457,7 +461,8 @@ function runLabel(suite: Suite, kind: Kind): string {
     return 'Selected by the api-destructive project. The describe is test.describe.fixme, so the body does not run and this is not counted as automated coverage.';
   }
   if (suite === 'api') return 'No browser. Runs in the api project.';
-  if (kind === 'destructive') return 'Chrome only, in the destructive project, after Chrome, Firefox, and Safari finish the read-only suites.';
+  if (kind === 'destructive')
+    return 'Chrome only, in the destructive project, after Chrome, Firefox, and Safari finish the read-only suites.';
   if (kind === 'journey') {
     return 'Chrome, Firefox, and Safari. This file is the cross-page journey. The tag is @regression. It does not run in the destructive project.';
   }

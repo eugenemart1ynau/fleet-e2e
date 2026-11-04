@@ -23,40 +23,50 @@ test.describe('Host details – software inventory', () => {
    * Checks: ?query= leaves the URL. The item count matches GET /hosts/:id/software again.
    * Why: clearing the box is how an operator gets the full inventory back.
    */
-  test('clearing software search restores the inventory count', { tag: '@regression' }, async ({ hostDetailsPage, api, linuxHost }) => {
-    const sw = await api.getHostSoftware(linuxHost.id);
-    expect(sw.count, 'host has not reported software yet').toBeGreaterThan(0);
-    await hostDetailsPage.goto(linuxHost.id, 'software');
-    await hostDetailsPage.searchSoftware(NO_MATCH_SOFTWARE_QUERY);
-    await hostDetailsPage.searchSoftware('');
-    await expect(hostDetailsPage.softwareCount(sw.count)).toBeVisible();
-  });
+  test(
+    'clearing software search restores the inventory count',
+    { tag: '@regression' },
+    async ({ hostDetailsPage, api, linuxHost }) => {
+      const sw = await api.getHostSoftware(linuxHost.id);
+      expect(sw.count, 'host has not reported software yet').toBeGreaterThan(0);
+      await hostDetailsPage.goto(linuxHost.id, 'software');
+      await hostDetailsPage.searchSoftware(NO_MATCH_SOFTWARE_QUERY);
+      await hostDetailsPage.searchSoftware('');
+      await expect(hostDetailsPage.softwareCount(sw.count)).toBeVisible();
+    },
+  );
 
   /**
    * Action: click the Name header on the software table, and read the first software link without opening it.
    * Checks: the Name sort button is visible, the URL records the sort, the visible names match GET /hosts/:id/software for that sort, the first link has an href, and the URL stays on this host's software tab.
    * Why: Name is the sort control on this table, and the name links to a software title on the next page.
    */
-  test('Name sort and software links stay on this tab', { tag: '@regression' }, async ({ hostDetailsPage, api, linuxHost, page }) => {
-    const sw = await api.getHostSoftware(linuxHost.id);
-    expect(sw.count, 'host has not reported software yet').toBeGreaterThan(0);
-    await hostDetailsPage.goto(linuxHost.id, 'software');
+  test(
+    'Name sort and software links stay on this tab',
+    { tag: '@regression' },
+    async ({ hostDetailsPage, api, linuxHost, page }) => {
+      const sw = await api.getHostSoftware(linuxHost.id);
+      expect(sw.count, 'host has not reported software yet').toBeGreaterThan(0);
+      await hostDetailsPage.goto(linuxHost.id, 'software');
 
-    const nameSort = hostDetailsPage.softwareNameSort();
-    await expect(nameSort).toBeVisible();
-    await nameSort.click();
-    await expect(page).toHaveURL(/order_key=/);
-    const url = new URL(page.url());
-    const order_key = url.searchParams.get('order_key') ?? 'name';
-    const order_direction = url.searchParams.get('order_direction') === 'desc' ? 'desc' : 'asc';
-    const sorted = await api.getHostSoftware(linuxHost.id, '', { order_key, order_direction });
-    await expect(hostDetailsPage.softwareRows().first()).toBeVisible();
-    const names = (await hostDetailsPage.softwareRows().allInnerTexts()).map((t) => t.split('\n')[0].trim()).filter(Boolean);
-    expect(names).toEqual(sorted.software.map((s) => s.name));
+      const nameSort = hostDetailsPage.softwareNameSort();
+      await expect(nameSort).toBeVisible();
+      await nameSort.click();
+      await expect(page).toHaveURL(/order_key=/);
+      const url = new URL(page.url());
+      const order_key = url.searchParams.get('order_key') ?? 'name';
+      const order_direction = url.searchParams.get('order_direction') === 'desc' ? 'desc' : 'asc';
+      const sorted = await api.getHostSoftware(linuxHost.id, '', { order_key, order_direction });
+      await expect(hostDetailsPage.softwareRows().first()).toBeVisible();
+      const names = (await hostDetailsPage.softwareRows().allInnerTexts())
+        .map((t) => t.split('\n')[0].trim())
+        .filter(Boolean);
+      expect(names).toEqual(sorted.software.map((s) => s.name));
 
-    const link = hostDetailsPage.softwareTitleLinks().first();
-    await expect(link).toBeVisible();
-    await expect(link).toHaveAttribute('href', /.+/);
-    await expect(page).toHaveURL(new RegExp(`/hosts/${linuxHost.id}/software`));
-  });
+      const link = hostDetailsPage.softwareTitleLinks().first();
+      await expect(link).toBeVisible();
+      await expect(link).toHaveAttribute('href', /.+/);
+      await expect(page).toHaveURL(new RegExp(`/hosts/${linuxHost.id}/software`));
+    },
+  );
 });

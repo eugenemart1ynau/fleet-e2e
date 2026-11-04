@@ -133,9 +133,7 @@ export class FleetApiClient {
   }
 
   private static clean(p: object): QueryParams {
-    return Object.fromEntries(
-      Object.entries(p).filter(([, v]) => v !== undefined && v !== ''),
-    ) as QueryParams;
+    return Object.fromEntries(Object.entries(p).filter(([, v]) => v !== undefined && v !== '')) as QueryParams;
   }
 
   /** Mirrors the request the Hosts page makes by default. One page. */
@@ -182,11 +180,14 @@ export class FleetApiClient {
     query = '',
     extra: { order_key?: string; order_direction?: 'asc' | 'desc' } = {},
   ): Promise<HostSoftwareResponse> {
-    return this.getJson<HostSoftwareResponse>(`/hosts/${id}/software`, FleetApiClient.clean({
-      ...DEFAULT_SOFTWARE_LIST,
-      query,
-      ...extra,
-    }));
+    return this.getJson<HostSoftwareResponse>(
+      `/hosts/${id}/software`,
+      FleetApiClient.clean({
+        ...DEFAULT_SOFTWARE_LIST,
+        query,
+        ...extra,
+      }),
+    );
   }
 
   /** Hosts shown when the Hosts page filters by a label. */
@@ -228,7 +229,9 @@ export class FleetApiClient {
    * Fleet persists settings, but GET /me and GET /users/:id omit them; GET /users includes them.
    */
   async getHiddenHostColumns(): Promise<string[]> {
-    const { users } = await this.getJson<{ users: Array<{ id: number; settings?: { hidden_host_columns?: string[] } }> }>('/users');
+    const { users } = await this.getJson<{
+      users: Array<{ id: number; settings?: { hidden_host_columns?: string[] } }>;
+    }>('/users');
     const me = users.find((u) => u.id === this.userId);
     if (!me) throw new Error(`user ${this.userId} missing from GET /users`);
     return me.settings?.hidden_host_columns ?? [];

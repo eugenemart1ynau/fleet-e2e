@@ -18,19 +18,23 @@ test.describe('Hosts page – row cells', () => {
    * Checks: os_version, status, and available disk space on each row match that host from GET /hosts.
    * Why: a row can show the right name and the wrong operating system.
    */
-  test('operating system, status, and disk space match GET /hosts', { tag: '@regression' }, async ({ hostsPage, api }) => {
-    const hosts = await api.listHosts();
-    await hostsPage.goto();
-    await hostsPage.expectCount(hosts.length);
+  test(
+    'operating system, status, and disk space match GET /hosts',
+    { tag: '@regression' },
+    async ({ hostsPage, api }) => {
+      const hosts = await api.listHosts();
+      await hostsPage.goto();
+      await hostsPage.expectCount(hosts.length);
 
-    for (const host of hosts) {
-      const row = hostsPage.row(host.display_name);
-      // The cell repeats the value for its tooltip, so the visible text is not the API string alone.
-      await expect(row.locator('td.os_version__cell'), host.display_name).toContainText(host.os_version || '---');
-      await expect(row.locator('td.status__cell'), host.display_name).toContainText(statusLabel(host.status));
-      await expect(row.locator('td.gigs_disk_space_available__cell'), host.display_name).toContainText(
-        `${host.gigs_disk_space_available.toFixed(2)} GB`,
-      );
-    }
-  });
+      for (const host of hosts) {
+        const row = hostsPage.row(host.display_name);
+        // The cell repeats the value for its tooltip, so the visible text is not the API string alone.
+        await expect(row.locator('td.os_version__cell'), host.display_name).toContainText(host.os_version || '---');
+        await expect(row.locator('td.status__cell'), host.display_name).toContainText(statusLabel(host.status));
+        await expect(row.locator('td.gigs_disk_space_available__cell'), host.display_name).toContainText(
+          `${host.gigs_disk_space_available.toFixed(2)} GB`,
+        );
+      }
+    },
+  );
 });

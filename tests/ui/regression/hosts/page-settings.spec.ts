@@ -17,10 +17,7 @@ test.describe('Hosts page – page settings', () => {
     await hostsPage.goto();
     const menu = await hostsPage.openPageSettings();
     await expect(menu.getByText('Enroll secrets', { exact: true })).toBeVisible();
-    await expect(hostsPage.pageSettingsOption('Activity automations')).toHaveAttribute(
-      'aria-disabled',
-      'true',
-    );
+    await expect(hostsPage.pageSettingsOption('Activity automations')).toHaveAttribute('aria-disabled', 'true');
     await menu.getByText('Enroll secrets', { exact: true }).click();
     const modal = hostsPage.enrollSecretsModal();
     await expect(modal).toBeVisible();

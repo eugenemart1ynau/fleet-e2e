@@ -11,12 +11,16 @@ test.describe('Hosts page – search', () => {
    * Checks: the count matches GET /hosts?query= for that name, and that host's link is visible.
    * Why: typing a hostname is the primary lookup.
    */
-  test('search by hostname narrows list and syncs ?query=', { tag: '@smoke' }, async ({ hostsPage, api, linuxHost }) => {
-    await hostsPage.goto();
-    await hostsPage.searchFor(linuxHost.display_name);
+  test(
+    'search by hostname narrows list and syncs ?query=',
+    { tag: '@smoke' },
+    async ({ hostsPage, api, linuxHost }) => {
+      await hostsPage.goto();
+      await hostsPage.searchFor(linuxHost.display_name);
 
-    const expected = await api.listHosts({ query: linuxHost.display_name });
-    await hostsPage.expectCount(expected.length);
-    await expect(hostsPage.hostLink(linuxHost.display_name)).toBeVisible();
-  });
+      const expected = await api.listHosts({ query: linuxHost.display_name });
+      await hostsPage.expectCount(expected.length);
+      await expect(hostsPage.hostLink(linuxHost.display_name)).toBeVisible();
+    },
+  );
 });

@@ -50,13 +50,19 @@ test.describe('Hosts page – column sort', () => {
    * Checks: the URL keeps both params, and the display names match GET /hosts with that sort.
    * Why: a shared sort link must arrive already sorted.
    */
-  test('deep link order_key=hostname&order_direction=desc matches API', { tag: '@regression' }, async ({ hostsPage, api, page }) => {
-    await hostsPage.goto({ order_key: 'hostname', order_direction: 'desc' });
-    await expect(page).toHaveURL(/order_key=hostname/);
-    await expect(page).toHaveURL(/order_direction=desc/);
-    const expected = (await api.listHosts({ order_key: 'hostname', order_direction: 'desc' })).map((h) => h.display_name);
-    await expect.poll(async () => hostsPage.hostNames()).toEqual(expected);
-  });
+  test(
+    'deep link order_key=hostname&order_direction=desc matches API',
+    { tag: '@regression' },
+    async ({ hostsPage, api, page }) => {
+      await hostsPage.goto({ order_key: 'hostname', order_direction: 'desc' });
+      await expect(page).toHaveURL(/order_key=hostname/);
+      await expect(page).toHaveURL(/order_direction=desc/);
+      const expected = (await api.listHosts({ order_key: 'hostname', order_direction: 'desc' })).map(
+        (h) => h.display_name,
+      );
+      await expect.poll(async () => hostsPage.hostNames()).toEqual(expected);
+    },
+  );
 
   /**
    * Action: show every column, click each sortable header once, including Operating system and Agent when that header is a sort button, and check Status, User email, and CPU.

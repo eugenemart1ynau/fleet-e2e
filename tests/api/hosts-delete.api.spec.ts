@@ -33,14 +33,18 @@ test.describe.fixme('API: authenticated host delete @api @destructive', () => {
    * Checks: first delete is 200, GET is 404, a uuid search no longer lists the id, and the second delete is 404.
    * Why: the details Delete control, including a repeat click after the host is gone.
    */
-  test('DELETE /hosts/:id returns 200, then 404, then a second delete is 404', { tag: '@destructive' }, async ({ api, allHosts }) => {
-    const victim = spareLinuxHost(allHosts);
+  test(
+    'DELETE /hosts/:id returns 200, then 404, then a second delete is 404',
+    { tag: '@destructive' },
+    async ({ api, allHosts }) => {
+      const victim = spareLinuxHost(allHosts);
 
-    await expectStatus(await api.delete(`/hosts/${victim.id}`), 200);
-    expect(await api.getHostStatusCode(victim.id)).toBe(404);
-    expect((await api.listHosts({ query: victim.uuid })).map((h) => h.id)).not.toContain(victim.id);
-    await expectStatus(await api.delete(`/hosts/${victim.id}`), 404);
-  });
+      await expectStatus(await api.delete(`/hosts/${victim.id}`), 200);
+      expect(await api.getHostStatusCode(victim.id)).toBe(404);
+      expect((await api.listHosts({ query: victim.uuid })).map((h) => h.id)).not.toContain(victim.id);
+      await expectStatus(await api.delete(`/hosts/${victim.id}`), 404);
+    },
+  );
 
   /**
    * Call: POST /hosts/delete with one spare id, then the same id again. This body does not run.
@@ -74,51 +78,64 @@ test.describe.fixme('API: authenticated host delete @api @destructive', () => {
    * Checks: 400, the known host is still 200, and the count is unchanged.
    * Why: Fleet rejects a body that mixes the two selectors.
    */
-  test('POST /hosts/delete with both ids and filters is 400 and deletes nothing', { tag: '@destructive' }, async ({ api, knownHost }) => {
-    const before = await api.countHosts();
-    await expectFleetError(
-      await api.post('/hosts/delete', { data: { ids: [knownHost.id], filters: { query: knownHost.uuid } } }),
-      400,
-    );
-    expect(await api.getHostStatusCode(knownHost.id)).toBe(200);
-    expect(await api.countHosts()).toBe(before);
-  });
+  test(
+    'POST /hosts/delete with both ids and filters is 400 and deletes nothing',
+    { tag: '@destructive' },
+    async ({ api, knownHost }) => {
+      const before = await api.countHosts();
+      await expectFleetError(
+        await api.post('/hosts/delete', { data: { ids: [knownHost.id], filters: { query: knownHost.uuid } } }),
+        400,
+      );
+      expect(await api.getHostStatusCode(knownHost.id)).toBe(200);
+      expect(await api.countHosts()).toBe(before);
+    },
+  );
 
   /**
    * Call: POST /hosts/delete with ids set to an empty list. This body does not run.
    * Checks: 400, and the host count is unchanged.
    * Why: an empty selection must not delete the fleet.
    */
-  test('POST /hosts/delete with an empty ids list is 400 and deletes nothing', { tag: '@destructive' }, async ({ api }) => {
-    const before = await api.countHosts();
-    await expectFleetError(await api.post('/hosts/delete', { data: { ids: [] } }), 400);
-    expect(await api.countHosts()).toBe(before);
-  });
+  test(
+    'POST /hosts/delete with an empty ids list is 400 and deletes nothing',
+    { tag: '@destructive' },
+    async ({ api }) => {
+      const before = await api.countHosts();
+      await expectFleetError(await api.post('/hosts/delete', { data: { ids: [] } }), 400);
+      expect(await api.countHosts()).toBe(before);
+    },
+  );
 
   /**
    * Call: POST /hosts/delete with an id that is not in the list. This body does not run.
    * Checks: the known host is still 200 and the count is unchanged.
    * Why: an unknown id must not remove a real host.
    */
-  test('POST /hosts/delete with an unknown id does not remove a real host', { tag: '@destructive' }, async ({ api, allHosts, knownHost }) => {
-    const before = await api.countHosts();
-    await api.post('/hosts/delete', { data: { ids: [missingHostId(allHosts)] } });
-    expect(await api.getHostStatusCode(knownHost.id)).toBe(200);
-    expect(await api.countHosts()).toBe(before);
-  });
+  test(
+    'POST /hosts/delete with an unknown id does not remove a real host',
+    { tag: '@destructive' },
+    async ({ api, allHosts, knownHost }) => {
+      const before = await api.countHosts();
+      await api.post('/hosts/delete', { data: { ids: [missingHostId(allHosts)] } });
+      expect(await api.getHostStatusCode(knownHost.id)).toBe(200);
+      expect(await api.countHosts()).toBe(before);
+    },
+  );
 
   /**
    * Call: POST /hosts/delete with filters.query set to a string that matches no host. This body does not run.
    * Checks: 200, the known host is still 200, and the count is unchanged. This is not filters: {}, which would delete every host.
    * Why: a filter that matches nothing must not delete a host.
    */
-  test('POST /hosts/delete with a no-match query filter does not remove a host', { tag: '@destructive' }, async ({ api, knownHost }) => {
-    const before = await api.countHosts();
-    await expectStatus(
-      await api.post('/hosts/delete', { data: { filters: { query: NO_MATCH_HOST_QUERY } } }),
-      200,
-    );
-    expect(await api.getHostStatusCode(knownHost.id)).toBe(200);
-    expect(await api.countHosts()).toBe(before);
-  });
+  test(
+    'POST /hosts/delete with a no-match query filter does not remove a host',
+    { tag: '@destructive' },
+    async ({ api, knownHost }) => {
+      const before = await api.countHosts();
+      await expectStatus(await api.post('/hosts/delete', { data: { filters: { query: NO_MATCH_HOST_QUERY } } }), 200);
+      expect(await api.getHostStatusCode(knownHost.id)).toBe(200);
+      expect(await api.countHosts()).toBe(before);
+    },
+  );
 });

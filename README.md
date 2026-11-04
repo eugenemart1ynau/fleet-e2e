@@ -22,11 +22,11 @@ The living list of what is automated, planned, or out of scope is [COVERAGE.md](
 
 Read-only UI runs in three browsers, from the same specs, on every `npm test` and `npm run test:ui-only`:
 
-| Browser in the report | What Playwright launches | Projects |
-|---|---|---|
-| Chrome | Desktop Chrome (Chromium) | `chrome`, plus the login setup and the delete |
-| Firefox | Desktop Firefox | `firefox` |
-| Safari | WebKit, the engine Safari uses | `safari` |
+| Browser in the report | What Playwright launches       | Projects                                      |
+| --------------------- | ------------------------------ | --------------------------------------------- |
+| Chrome                | Desktop Chrome (Chromium)      | `chrome`, plus the login setup and the delete |
+| Firefox               | Desktop Firefox                | `firefox`                                     |
+| Safari                | WebKit, the engine Safari uses | `safari`                                      |
 
 Smoke, regression, and the one Hosts and host-details journey each run in all three. Install them once with `npx playwright install chromium firefox webkit`.
 
@@ -96,25 +96,27 @@ Workers default to 2. The suite shares one preview and one admin user. Edit colu
 
 All of these set `FORCE_COLOR` so the checkmarks stay colored.
 
-| You want | Command |
-|---|---|
-| Everything | `npm test` |
-| Read-only API only | `npm run test:api` |
-| API happy paths | `npm run test:api:smoke` |
-| API extras, without the smoke rows | `npm run test:api:regression` |
-| API delete specs (they are `fixme` and do not delete) | `npm run test:api:destructive` |
-| All UI, including the Chrome delete at the end | `npm run test:ui-only` |
-| UI smoke, three browsers, no delete | `npm run test:ui:smoke` |
-| UI regression, three browsers, no delete | `npm run test:ui:regression` |
-| The one Hosts and host-details journey, three browsers, no delete | `npm run test:ui:e2e` |
-| Anything tagged `@smoke`, API and UI | `npm run test:smoke` |
-| Host delete. Also runs the three read-only browsers first, because delete waits for them | `npm run test:destructive` |
-| Watch the browser | `npm run test:headed` |
-| Playwright's UI mode | `npm run test:ui` |
-| Open the last HTML report | `npm run report` |
-| Typecheck, no tests | `npm run typecheck` |
-| Launch the coverage dashboard | `npm run coverage` |
-| Refresh the dashboard screenshots from preview, then open it | `npm run coverage:shots` |
+| You want                                                                                 | Command                        |
+| ---------------------------------------------------------------------------------------- | ------------------------------ |
+| Everything                                                                               | `npm test`                     |
+| Read-only API only                                                                       | `npm run test:api`             |
+| API happy paths                                                                          | `npm run test:api:smoke`       |
+| API extras, without the smoke rows                                                       | `npm run test:api:regression`  |
+| API delete specs (they are `fixme` and do not delete)                                    | `npm run test:api:destructive` |
+| All UI, including the Chrome delete at the end                                           | `npm run test:ui-only`         |
+| UI smoke, three browsers, no delete                                                      | `npm run test:ui:smoke`        |
+| UI regression, three browsers, no delete                                                 | `npm run test:ui:regression`   |
+| The one Hosts and host-details journey, three browsers, no delete                        | `npm run test:ui:e2e`          |
+| Anything tagged `@smoke`, API and UI                                                     | `npm run test:smoke`           |
+| Host delete. Also runs the three read-only browsers first, because delete waits for them | `npm run test:destructive`     |
+| Watch the browser                                                                        | `npm run test:headed`          |
+| Playwright's UI mode                                                                     | `npm run test:ui`              |
+| Open the last HTML report                                                                | `npm run report`               |
+| Typecheck the suite and the coverage atlas                                               | `npm run typecheck`            |
+| Lint                                                                                     | `npm run lint`                 |
+| Check formatting                                                                         | `npm run format:check`         |
+| Launch the coverage dashboard                                                            | `npm run coverage`             |
+| Refresh the dashboard screenshots from preview, then open it                             | `npm run coverage:shots`       |
 
 A single file, one browser, no retry:
 
@@ -131,6 +133,8 @@ npx playwright test tests/ui/smoke/hosts/search.spec.ts --project=chrome --retri
 Priority, in order: you can see the inventory, you can find a host, you can triage by status, the facts on a host match the API, and delete either leaves the host alone or removes the one you chose.
 
 Read-only UI uses the first online simulated Linux host (`pickLinuxHost` in `src/utils/hostPicker.ts`). That host is the same shape on every machine. The delete test picks a different online Linux host, the last spare by id, and fails if there is no spare. After confirm, it asserts the old id is 404. Preview's agent comes back as a new id, so the test does not claim the hostname is gone forever.
+
+Serial search and a computer name that differs from the hostname use whichever enrolled host reports those fields. The simulated Linux hosts leave serial blank and copy the hostname into computer name, so a preview that is only those containers fails those two checks.
 
 Assertions that would print an enroll secret use a boolean membership check (`expectIncluded`). A failure says the secret did not match. It does not paste the secret into the HTML report.
 
@@ -182,15 +186,15 @@ On failure, Playwright keeps a trace, a screenshot, and a video. `npm run report
 
 Copy [`.env.example`](./.env.example) to `.env` and set `FLEET_EMAIL` and `FLEET_PASSWORD`. Do not commit `.env`.
 
-| Variable | Default | What it does |
-|---|---|---|
-| `BASE_URL` | `http://localhost:1337` | Preview origin. No trailing slash required |
-| `FLEET_EMAIL` | set in `.env` | Preview admin. Required |
-| `FLEET_PASSWORD` | set in `.env` | Preview admin password. Required |
-| `MIN_HOSTS` | `2` | How many enrolled hosts setup waits for |
-| `READINESS_TIMEOUT_MS` | `180000` | How long setup waits for Fleet, hosts, and software |
-| `WORKERS` | `2` | Playwright workers. Stay at 1 or 2 on one preview |
-| `CI` | unset | When set, read-only retries become 2 and `test.only` fails the run |
+| Variable               | Default                 | What it does                                                       |
+| ---------------------- | ----------------------- | ------------------------------------------------------------------ |
+| `BASE_URL`             | `http://localhost:1337` | Preview origin. No trailing slash required                         |
+| `FLEET_EMAIL`          | set in `.env`           | Preview admin. Required                                            |
+| `FLEET_PASSWORD`       | set in `.env`           | Preview admin password. Required                                   |
+| `MIN_HOSTS`            | `2`                     | How many enrolled hosts setup waits for                            |
+| `READINESS_TIMEOUT_MS` | `180000`                | How long setup waits for Fleet, hosts, and software                |
+| `WORKERS`              | `2`                     | Playwright workers. Stay at 1 or 2 on one preview                  |
+| `CI`                   | unset                   | When set, read-only retries become 2 and `test.only` fails the run |
 
 `.env`, `.auth/` (the saved login and the column lock), `test-results/`, `playwright-report/`, `coverage-dashboard/screens-next/`, and `*.pkg` are gitignored. A downloaded osquery installer from the Add hosts modal does not belong in the repo. The dashboard page and its masked screenshots are kept.
 
@@ -222,6 +226,12 @@ npm run coverage:shots
 
 That command takes the screenshots, masks the enroll secret before saving, rebuilds the page, and opens it. It does not confirm Delete or post a secret. Hotspot boxes are measured on the live page, so after a Fleet layout change, run `npm run coverage:shots` again. The masked PNGs live in `coverage-dashboard/screens/` and are kept. Only `coverage-dashboard/screens-next/`, the in-progress capture, is gitignored.
 
+## Static checks
+
+`npm run typecheck` runs the suite project and [`tsconfig.tools.json`](./tsconfig.tools.json), which covers [`tools/coverage/`](tools/coverage). `npm run lint` is ESLint. `npm run format:check` is Prettier. `npm run format` writes the Prettier result.
+
+[`.github/workflows/check.yml`](./.github/workflows/check.yml) runs those three on push and pull request, on Node 20. It does not boot `fleetctl preview`. The browser suite stays on your machine.
+
 ## When setup fails
 
 - **Fleet not healthy at `/healthz`.** Preview is not up, or Docker is not. Start `fleetctl preview` and wait until the UI loads in a browser.
@@ -234,7 +244,7 @@ That command takes the screenshots, masks the enroll secret before saving, rebui
 - Turn on the authenticated `DELETE /hosts/:id` and `POST /hosts/delete` specs once a deleted host can be restored. They stay `test.fixme` until then. Re-enrollment is a new id.
 - Seed custom labels through the API so label-filter tests can cover a label we created, then clean it up.
 - A small data builder for labels and policies, with cleanup in fixtures. Populated Policies and Reports tables need that, and seeding them leaves these two pages, so it stays future work.
-- A GitHub Actions workflow that boots `fleetctl preview` and runs this suite.
+- Run this suite in GitHub Actions against `fleetctl preview`. The workflow today typechecks, lints, and checks formatting.
 - An axe accessibility pass on both pages.
 
 Rows still marked planned in [COVERAGE.md](./COVERAGE.md) are the SHOULD items. Back navigation and the in-scope Hosts controls are already covered.

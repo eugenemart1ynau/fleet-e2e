@@ -9,6 +9,9 @@ setup('authenticate as admin', async ({ page }) => {
   await login.login(env.email, env.password);
   await expect(page).toHaveURL(/\/(dashboard|hosts)/);
   const cookies = await page.context().cookies();
-  expect(cookies.some((c) => c.name === 'token' || c.name === '__Host-token'), 'auth cookie set').toBeTruthy();
+  expect(
+    cookies.some((c) => c.name === 'token' || c.name === '__Host-token'),
+    'auth cookie set',
+  ).toBeTruthy();
   await page.context().storageState({ path: STORAGE_STATE });
 });

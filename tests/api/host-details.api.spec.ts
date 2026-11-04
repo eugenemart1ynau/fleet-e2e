@@ -39,7 +39,10 @@ test.describe('API: GET /hosts/:id @api', () => {
       refetch_requested: expect.any(Boolean),
     });
     expect(Array.isArray(host.labels)).toBe(true);
-    expect(host.labels.map((l) => l.name), 'every host is in the builtin "All Hosts" label').toContain('All Hosts');
+    expect(
+      host.labels.map((l) => l.name),
+      'every host is in the builtin "All Hosts" label',
+    ).toContain('All Hosts');
     expect(Array.isArray(host.policies), 'Policies tab reads host.policies').toBe(true);
     expect(host.issues?.failing_policies_count, 'Policies tab count').toEqual(expect.any(Number));
     expectNullOrArray(host.pack_stats, 'Reports tab reads host.pack_stats');
@@ -50,12 +53,18 @@ test.describe('API: GET /hosts/:id @api', () => {
    * Checks: the lean body has no software items. The default body includes a software array.
    * Why: the details header asks to omit software. The Software tab does not.
    */
-  test('exclude_software=true omits software; default includes it', { tag: '@regression' }, async ({ api, knownHost }) => {
-    const lean = await expectJson<HostResponse>(await api.get(`/hosts/${knownHost.id}`, { params: { exclude_software: true } }));
-    expect(lean.host.software ?? []).toEqual([]);
-    const full = await expectJson<HostResponse>(await api.get(`/hosts/${knownHost.id}`));
-    expect(Array.isArray(full.host.software)).toBe(true);
-  });
+  test(
+    'exclude_software=true omits software; default includes it',
+    { tag: '@regression' },
+    async ({ api, knownHost }) => {
+      const lean = await expectJson<HostResponse>(
+        await api.get(`/hosts/${knownHost.id}`, { params: { exclude_software: true } }),
+      );
+      expect(lean.host.software ?? []).toEqual([]);
+      const full = await expectJson<HostResponse>(await api.get(`/hosts/${knownHost.id}`));
+      expect(Array.isArray(full.host.software)).toBe(true);
+    },
+  );
 
   /**
    * Call: GET /hosts/:id with an id that is not in the current list.
@@ -132,9 +141,8 @@ test.describe('API: GET /hosts/:id/software @api', () => {
   test('query narrows results to matching names', { tag: '@regression' }, async ({ api, knownHost }) => {
     const total = await waitForSoftware(api, knownHost.id);
     test.skip(total === 0, 'no software reported yet');
-    const first = (await expectJson<HostSoftwareResponse>(
-      await api.get(`/hosts/${knownHost.id}/software`, { params }),
-    )).software[0].name;
+    const first = (await expectJson<HostSoftwareResponse>(await api.get(`/hosts/${knownHost.id}/software`, { params })))
+      .software[0].name;
     const res = await expectJson<HostSoftwareResponse>(
       await api.get(`/hosts/${knownHost.id}/software`, { params: { ...params, query: first } }),
     );
@@ -180,9 +188,7 @@ test.describe('API: host activities @api', () => {
    * Why: past activity on the details side card.
    */
   test('GET /hosts/:id/activities returns a list', { tag: '@regression' }, async ({ api, knownHost }) => {
-    const body = await expectJson<ActivitiesResponse>(
-      await api.get(`/hosts/${knownHost.id}/activities`, { params }),
-    );
+    const body = await expectJson<ActivitiesResponse>(await api.get(`/hosts/${knownHost.id}/activities`, { params }));
     expectNullOrArray(body.activities, 'past activities are null or an array');
     expect(body.meta).toMatchObject({
       has_next_results: expect.any(Boolean),

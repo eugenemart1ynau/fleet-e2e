@@ -9,7 +9,9 @@ export abstract class BasePage {
   }
 
   async expectSuccessToast(text: string | RegExp): Promise<void> {
-    await expect(this.page.locator('.toast-notification__card--success, [role="alert"]').filter({ hasText: text })).toBeVisible();
+    await expect(
+      this.page.locator('.toast-notification__card--success, [role="alert"]').filter({ hasText: text }),
+    ).toBeVisible();
   }
 
   async expectNoErrorToast(): Promise<void> {

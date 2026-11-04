@@ -57,6 +57,9 @@ export function parseCsv(text: string): { headers: string[]; rows: string[][] } 
 
   return {
     headers: parseLine(lines[0]),
-    rows: lines.slice(1).filter((l) => l.length > 0).map(parseLine),
+    rows: lines
+      .slice(1)
+      .filter((l) => l.length > 0)
+      .map(parseLine),
   };
 }

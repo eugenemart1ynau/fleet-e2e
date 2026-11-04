@@ -23,22 +23,41 @@ export class LoginPage extends BasePage {
       .locator('.toast-notification__message')
       .filter({ hasText: /limit exceeded, retry after:/i });
     for (let attempt = 1; attempt <= 8; attempt++) {
-      if (!this.page.url().includes('/login')) return;
+      if (!this.page.url().includes('/login')) {
+        await this.leaveLogin();
+        return;
+      }
       await this.waitOutLimit(toasts, attempt);
       await this.submit.click();
       const outcome = await Promise.race([
         this.page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 20_000 }).then(() => 'ok' as const),
-        toasts.first().waitFor({ state: 'visible', timeout: 20_000 }).then(() => 'limited' as const),
+        toasts
+          .first()
+          .waitFor({ state: 'visible', timeout: 20_000 })
+          .then(() => 'limited' as const),
       ]).catch(() => 'stuck' as const);
-      if (outcome === 'ok' || !this.page.url().includes('/login')) return;
+      if (outcome === 'ok' || !this.page.url().includes('/login')) {
+        await this.leaveLogin();
+        return;
+      }
       const navigated = await this.page
         .waitForURL((url) => !url.pathname.includes('/login'), { timeout: 2_000 })
         .then(() => true)
         .catch(() => false);
-      if (navigated) return;
+      if (navigated) {
+        await this.leaveLogin();
+        return;
+      }
       if (attempt === 8) break;
     }
     await expect(this.page).not.toHaveURL(/\/login/);
+    await this.leaveLogin();
+  }
+
+  /** Fleet sends /login to /dashboard after the form accepts. Wait until that navigation finishes. */
+  private async leaveLogin(): Promise<void> {
+    await this.page.waitForURL(/\/(dashboard|hosts)(\/|$|\?)/, { timeout: 20_000 });
+    await this.page.waitForLoadState('load');
   }
 
   private async waitOutLimit(toasts: Locator, attempt: number): Promise<void> {

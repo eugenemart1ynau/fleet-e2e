@@ -14,21 +14,21 @@ test.describe('Hosts page – edit columns', () => {
    */
   test('hiding a column persists via hidden_host_columns', { tag: '@smoke' }, async ({ hostsPage, api, page }) => {
     await withHostColumnLock(async () => {
-    await api.setHiddenHostColumns([]);
-    await hostsPage.goto();
-    await expect(hostsPage.columnHeader('hardware_model')).toBeVisible();
-
-    try {
-      await hostsPage.toggleColumnAndSave('Hardware model');
-      await expect(hostsPage.columnHeader('hardware_model')).toHaveCount(0);
-      expect(await api.getHiddenHostColumns()).toContain('hardware_model');
-
-      await page.reload();
-      await hostsPage.waitForLoaded();
-      await expect(hostsPage.columnHeader('hardware_model')).toHaveCount(0);
-    } finally {
       await api.setHiddenHostColumns([]);
-    }
+      await hostsPage.goto();
+      await expect(hostsPage.columnHeader('hardware_model')).toBeVisible();
+
+      try {
+        await hostsPage.toggleColumnAndSave('Hardware model');
+        await expect(hostsPage.columnHeader('hardware_model')).toHaveCount(0);
+        expect(await api.getHiddenHostColumns()).toContain('hardware_model');
+
+        await page.reload();
+        await hostsPage.waitForLoaded();
+        await expect(hostsPage.columnHeader('hardware_model')).toHaveCount(0);
+      } finally {
+        await api.setHiddenHostColumns([]);
+      }
     });
   });
 });

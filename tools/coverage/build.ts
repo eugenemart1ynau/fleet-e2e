@@ -41,7 +41,9 @@ fs.writeFileSync(outFile, html);
 const counts = model.kindCounts.map((item) => `${item.label} ${item.count}`).join(', ');
 console.log(`Wrote ${path.relative(root, outFile)}`);
 console.log(`${model.tests.length} tests (${counts})`);
-console.log(model.shotsCapturedAt ? `Screens from ${model.shotsCapturedAt}` : 'No screenshots yet. npm run coverage:shots');
+console.log(
+  model.shotsCapturedAt ? `Screens from ${model.shotsCapturedAt}` : 'No screenshots yet. npm run coverage:shots',
+);
 
 if (!process.env.COVERAGE_NO_OPEN) {
   const opener = process.platform === 'darwin' ? 'open' : 'xdg-open';

@@ -1,7 +1,14 @@
 import { test, expect } from '../../src/fixtures/api';
 import { DEFAULT_HOST_LIST } from '../../src/api/FleetApiClient';
 import { expectEvery, expectFleetError, expectJson, expectStatus } from '../../src/api/assertions';
-import type { CountResponse, EnrollSecretSpec, Host, HostsResponse, HostStatus, LabelsResponse } from '../../src/api/types';
+import type {
+  CountResponse,
+  EnrollSecretSpec,
+  Host,
+  HostsResponse,
+  HostStatus,
+  LabelsResponse,
+} from '../../src/api/types';
 import { absentId, csvValue, ids, NO_MATCH_HOST_QUERY, parseCsv } from '../../src/utils/apiData';
 
 /**
@@ -59,10 +66,14 @@ test.describe('API: GET /hosts list and count @api', () => {
    * Why: those are the other sortable Hosts table headers.
    */
   for (const order_key of ['hostname', 'seen_time', 'platform', 'os_version', 'issues'] as const) {
-    test(`order_key=${order_key} returns 200 with the same host set`, { tag: '@regression' }, async ({ api, allHosts }) => {
-      const ordered = await api.listAllHosts({ order_key, order_direction: 'asc' });
-      expect(ids(ordered)).toEqual(ids(allHosts));
-    });
+    test(
+      `order_key=${order_key} returns 200 with the same host set`,
+      { tag: '@regression' },
+      async ({ api, allHosts }) => {
+        const ordered = await api.listAllHosts({ order_key, order_direction: 'asc' });
+        expect(ids(ordered)).toEqual(ids(allHosts));
+      },
+    );
   }
 
   /**
@@ -123,15 +134,25 @@ test.describe('API: GET /hosts list and count @api', () => {
    * Checks: both responses have the same ids. The plain response omits device_mapping. The flagged response includes the key on every host.
    * Why: the Hosts page always sends device_mapping=true.
    */
-  test('device_mapping=true is the Hosts page list call and keeps the same ids', { tag: '@regression' }, async ({ api }) => {
-    const plain = await expectJson<HostsResponse>(await api.get('/hosts', { params: DEFAULT_HOST_LIST }));
-    const withMapping = await expectJson<{ hosts: Array<Host & { device_mapping?: unknown }> }>(
-      await api.get('/hosts', { params: { ...DEFAULT_HOST_LIST, device_mapping: true } }),
-    );
-    expect(ids(withMapping.hosts)).toEqual(ids(plain.hosts));
-    expect(plain.hosts.every((h) => !('device_mapping' in h)), 'omitted unless requested').toBe(true);
-    expect(withMapping.hosts.every((h) => 'device_mapping' in h), 'page always requests device_mapping').toBe(true);
-  });
+  test(
+    'device_mapping=true is the Hosts page list call and keeps the same ids',
+    { tag: '@regression' },
+    async ({ api }) => {
+      const plain = await expectJson<HostsResponse>(await api.get('/hosts', { params: DEFAULT_HOST_LIST }));
+      const withMapping = await expectJson<{ hosts: Array<Host & { device_mapping?: unknown }> }>(
+        await api.get('/hosts', { params: { ...DEFAULT_HOST_LIST, device_mapping: true } }),
+      );
+      expect(ids(withMapping.hosts)).toEqual(ids(plain.hosts));
+      expect(
+        plain.hosts.every((h) => !('device_mapping' in h)),
+        'omitted unless requested',
+      ).toBe(true);
+      expect(
+        withMapping.hosts.every((h) => 'device_mapping' in h),
+        'page always requests device_mapping',
+      ).toBe(true);
+    },
+  );
 });
 
 /**
@@ -148,18 +169,32 @@ test.describe('API: status filter @api', () => {
    * Why: each status chip on the Hosts page.
    */
   for (const status of statuses) {
-    test(`status=${status}: list is a subset of all hosts and matches count`, {
-      tag: status === 'online' ? '@smoke' : '@regression',
-    }, async ({ api, allHosts }) => {
-      const filtered = await api.listAllHosts({ status });
-      const count = await api.countHosts({ status });
-      expect(count, 'count == list length').toBe(filtered.length);
-      const all = new Set(allHosts.map((h) => h.id));
-      expectEvery(filtered, (h) => all.has(h.id), 'filtered ⊆ all', (h) => h.id);
-      if (status === 'online' || status === 'offline') {
-        expectEvery(filtered, (h) => h.status === status, `every host is ${status}`, (h) => `${h.id}:${h.status}`);
-      }
-    });
+    test(
+      `status=${status}: list is a subset of all hosts and matches count`,
+      {
+        tag: status === 'online' ? '@smoke' : '@regression',
+      },
+      async ({ api, allHosts }) => {
+        const filtered = await api.listAllHosts({ status });
+        const count = await api.countHosts({ status });
+        expect(count, 'count == list length').toBe(filtered.length);
+        const all = new Set(allHosts.map((h) => h.id));
+        expectEvery(
+          filtered,
+          (h) => all.has(h.id),
+          'filtered ⊆ all',
+          (h) => h.id,
+        );
+        if (status === 'online' || status === 'offline') {
+          expectEvery(
+            filtered,
+            (h) => h.status === status,
+            `every host is ${status}`,
+            (h) => `${h.id}:${h.status}`,
+          );
+        }
+      },
+    );
   }
 
   /**
@@ -170,7 +205,10 @@ test.describe('API: status filter @api', () => {
   test('online + offline partition the online/offline hosts', { tag: '@regression' }, async ({ api, allHosts }) => {
     const online = await api.listAllHosts({ status: 'online' });
     const offline = await api.listAllHosts({ status: 'offline' });
-    expect(ids(online).filter((id) => ids(offline).includes(id)), 'no overlap').toEqual([]);
+    expect(
+      ids(online).filter((id) => ids(offline).includes(id)),
+      'no overlap',
+    ).toEqual([]);
     expect(ids(online)).toEqual(ids(allHosts.filter((h) => h.status === 'online')));
     expect(ids(offline)).toEqual(ids(allHosts.filter((h) => h.status === 'offline')));
   });
@@ -187,12 +225,16 @@ test.describe('API: search (?query=) @api', () => {
    * Checks: the known host is in the list, the list is no longer than the full fleet, and count equals the list length.
    * Why: searching the visible hostname is the primary lookup.
    */
-  test('exact hostname returns that host and a subset of all hosts', { tag: '@smoke' }, async ({ api, knownHost, allHosts }) => {
-    const res = await api.listHosts({ query: knownHost.hostname });
-    expect(res.map((h) => h.id)).toContain(knownHost.id);
-    expect(res.length).toBeLessThanOrEqual(allHosts.length);
-    expect(await api.countHosts({ query: knownHost.hostname })).toBe(res.length);
-  });
+  test(
+    'exact hostname returns that host and a subset of all hosts',
+    { tag: '@smoke' },
+    async ({ api, knownHost, allHosts }) => {
+      const res = await api.listHosts({ query: knownHost.hostname });
+      expect(res.map((h) => h.id)).toContain(knownHost.id);
+      expect(res.length).toBeLessThanOrEqual(allHosts.length);
+      expect(await api.countHosts({ query: knownHost.hostname })).toBe(res.length);
+    },
+  );
 
   /**
    * Call: GET /hosts?query= with the first four characters of the hostname.
@@ -205,8 +247,10 @@ test.describe('API: search (?query=) @api', () => {
     expect(res.map((h) => h.id)).toContain(knownHost.id);
     expectEvery(
       res,
-      (h) => [h.hostname, h.display_name, h.computer_name, h.uuid, h.hardware_serial, h.primary_ip]
-        .some((f) => (f ?? '').toLowerCase().includes(prefix.toLowerCase())),
+      (h) =>
+        [h.hostname, h.display_name, h.computer_name, h.uuid, h.hardware_serial, h.primary_ip].some((f) =>
+          (f ?? '').toLowerCase().includes(prefix.toLowerCase()),
+        ),
       `every result matches "${prefix}" in a searchable field`,
       (h) => h.display_name,
     );
@@ -232,13 +276,13 @@ test.describe('API: search (?query=) @api', () => {
   });
 
   /**
-   * Call: GET /hosts?query={hardware_serial} for the first host that has one.
-   * Checks: that host id is in the results. Skips when no host reports a serial. Simulated Linux hosts have none.
+   * Call: GET /hosts?query={hardware_serial} for the first host that reports one.
+   * Checks: that host id is in the results. Simulated Linux hosts leave this blank, so the host that reports a serial is the one searched.
    * Why: serial is one of the fields the search box matches.
    */
   test('hardware_serial finds the host', { tag: '@regression' }, async ({ api, allHosts }) => {
-    const withSerial = allHosts.find((h) => h.hardware_serial);
-    test.skip(!withSerial, 'no host on this preview reports a hardware_serial (simulated Linux hosts have none)');
+    const withSerial = allHosts.find((h) => h.hardware_serial.trim() !== '');
+    expect(withSerial, 'an enrolled host must report hardware_serial').toBeTruthy();
     expect((await api.listHosts({ query: withSerial!.hardware_serial })).map((h) => h.id)).toContain(withSerial!.id);
   });
 
@@ -278,7 +322,10 @@ test.describe('API: search (?query=) @api', () => {
    * Why: % must be a literal character, not a SQL match-all.
    */
   test('SQL wildcard % is treated literally', { tag: '@regression' }, async ({ api, allHosts }) => {
-    test.skip(allHosts.some((h) => `${h.hostname}${h.display_name}`.includes('%')), 'a host name contains %');
+    test.skip(
+      allHosts.some((h) => `${h.hostname}${h.display_name}`.includes('%')),
+      'a host name contains %',
+    );
     expect(await api.countHosts({ query: '%' })).toBe(0);
   });
 
@@ -288,21 +335,28 @@ test.describe('API: search (?query=) @api', () => {
    * Why: _ must be a literal character, not a SQL single-character wildcard.
    */
   test('SQL wildcard _ is treated literally', { tag: '@regression' }, async ({ api, allHosts }) => {
-    test.skip(allHosts.some((h) => `${h.hostname}${h.display_name}`.includes('_')), 'a host name contains _');
+    test.skip(
+      allHosts.some((h) => `${h.hostname}${h.display_name}`.includes('_')),
+      'a host name contains _',
+    );
     expect(await api.countHosts({ query: '_' })).toBe(0);
     expect(await api.listHosts({ query: '_' })).toEqual([]);
   });
 
   /**
    * Call: GET /hosts?query={computer_name} for a host whose computer_name differs from its hostname.
-   * Checks: that host id is in the results. Skips when every computer_name equals its hostname.
-   * Why: the search box matches the computer name shown on some hosts, including the Mac.
+   * Checks: that host id is in the results. Simulated Linux copies the hostname into computer_name, so the host with a distinct computer name is the one searched.
+   * Why: the search box matches the computer name shown on the host, not only the hostname.
    */
-  test('computer_name finds the host when it differs from hostname', { tag: '@regression' }, async ({ api, allHosts }) => {
-    const named = allHosts.find((h) => h.computer_name && h.computer_name !== h.hostname);
-    test.skip(!named, 'every host computer_name equals hostname on this preview');
-    expect((await api.listHosts({ query: named!.computer_name })).map((h) => h.id)).toContain(named!.id);
-  });
+  test(
+    'computer_name finds the host when it differs from hostname',
+    { tag: '@regression' },
+    async ({ api, allHosts }) => {
+      const named = allHosts.find((h) => h.computer_name.trim() !== '' && h.computer_name !== h.hostname);
+      expect(named, 'an enrolled host must report a computer_name different from its hostname').toBeTruthy();
+      expect((await api.listHosts({ query: named!.computer_name })).map((h) => h.id)).toContain(named!.id);
+    },
+  );
 
   /**
    * Call: GET /hosts?query={uuid}&status=online, and the same query with status=offline when the host is online.
@@ -364,9 +418,17 @@ test.describe('API: GET /hosts/report (CSV export) @api', () => {
     });
     await expectStatus(res, 200);
     const { headers, rows } = parseCsv(await res.text());
-    expectEvery(rows, (r) => csvValue(headers, r, 'status') === 'online', 'every CSV row is online', (r) => csvValue(headers, r, 'uuid'));
+    expectEvery(
+      rows,
+      (r) => csvValue(headers, r, 'status') === 'online',
+      'every CSV row is online',
+      (r) => csvValue(headers, r, 'uuid'),
+    );
     expect(rows.map((r) => csvValue(headers, r, 'uuid')).sort()).toEqual(
-      allHosts.filter((h) => h.status === 'online').map((h) => h.uuid).sort(),
+      allHosts
+        .filter((h) => h.status === 'online')
+        .map((h) => h.uuid)
+        .sort(),
     );
   });
 
@@ -471,37 +533,48 @@ test.describe('API: labels (platform / label filter on Hosts) @api', () => {
    * Checks: the list is non-empty and includes All Hosts, All Linux, and macOS.
    * Why: those are the builtin filters in the Hosts platform menu.
    */
-  test('GET /labels includes Hosts filter builtins (All Hosts, All Linux, macOS)', { tag: '@smoke' }, async ({ api }) => {
-    const { labels } = await expectJson<LabelsResponse>(await api.get('/labels'));
-    expect(labels.length).toBeGreaterThan(0);
-    for (const name of ['All Hosts', 'All Linux', 'macOS']) {
-      expect(labels.map((l) => l.name), name).toContain(name);
-    }
-  });
+  test(
+    'GET /labels includes Hosts filter builtins (All Hosts, All Linux, macOS)',
+    { tag: '@smoke' },
+    async ({ api }) => {
+      const { labels } = await expectJson<LabelsResponse>(await api.get('/labels'));
+      expect(labels.length).toBeGreaterThan(0);
+      for (const name of ['All Hosts', 'All Linux', 'macOS']) {
+        expect(
+          labels.map((l) => l.name),
+          name,
+        ).toContain(name);
+      }
+    },
+  );
 
   /**
    * Call: GET /labels/:id/hosts for All Linux, and GET /hosts/count?label_id={that id}.
    * Checks: at least one host, none are darwin or windows, the count equals the list length, and the count matches the label's host_count or count.
    * Why: choosing Linux in the platform menu loads this route.
    */
-  test('GET /labels/:id/hosts for All Linux returns only linux platforms and matches count', { tag: '@smoke' }, async ({ api }) => {
-    const linux = await api.requireLabel('All Linux');
-    const { hosts } = await expectJson<HostsResponse>(
-      await api.get(`/labels/${linux.id}/hosts`, { params: DEFAULT_HOST_LIST }),
-    );
-    expect(hosts.length).toBeGreaterThan(0);
-    expectEvery(
-      hosts,
-      (h) => h.platform !== 'darwin' && h.platform !== 'windows',
-      'All Linux hosts are non-darwin/windows',
-      (h) => `${h.id}:${h.platform}`,
-    );
-    const { count } = await expectJson<CountResponse>(
-      await api.get('/hosts/count', { params: { label_id: linux.id } }),
-    );
-    expect(count).toBe(hosts.length);
-    expect(count).toBe(linux.host_count ?? linux.count ?? count);
-  });
+  test(
+    'GET /labels/:id/hosts for All Linux returns only linux platforms and matches count',
+    { tag: '@smoke' },
+    async ({ api }) => {
+      const linux = await api.requireLabel('All Linux');
+      const { hosts } = await expectJson<HostsResponse>(
+        await api.get(`/labels/${linux.id}/hosts`, { params: DEFAULT_HOST_LIST }),
+      );
+      expect(hosts.length).toBeGreaterThan(0);
+      expectEvery(
+        hosts,
+        (h) => h.platform !== 'darwin' && h.platform !== 'windows',
+        'All Linux hosts are non-darwin/windows',
+        (h) => `${h.id}:${h.platform}`,
+      );
+      const { count } = await expectJson<CountResponse>(
+        await api.get('/hosts/count', { params: { label_id: linux.id } }),
+      );
+      expect(count).toBe(hosts.length);
+      expect(count).toBe(linux.host_count ?? linux.count ?? count);
+    },
+  );
 
   /**
    * Call: GET /labels/:id/hosts for the macOS label.
@@ -513,7 +586,12 @@ test.describe('API: labels (platform / label filter on Hosts) @api', () => {
     const { hosts } = await expectJson<HostsResponse>(
       await api.get(`/labels/${mac.id}/hosts`, { params: DEFAULT_HOST_LIST }),
     );
-    expectEvery(hosts, (h) => h.platform === 'darwin', 'macOS label is darwin-only', (h) => h.platform);
+    expectEvery(
+      hosts,
+      (h) => h.platform === 'darwin',
+      'macOS label is darwin-only',
+      (h) => h.platform,
+    );
   });
 
   /**
@@ -528,7 +606,12 @@ test.describe('API: labels (platform / label filter on Hosts) @api', () => {
         params: { ...DEFAULT_HOST_LIST, status: 'online' },
       }),
     );
-    expectEvery(hosts, (h) => h.status === 'online', 'online under label', (h) => `${h.id}:${h.status}`);
+    expectEvery(
+      hosts,
+      (h) => h.status === 'online',
+      'online under label',
+      (h) => `${h.id}:${h.status}`,
+    );
   });
 
   /**
@@ -568,11 +651,15 @@ test.describe('API: labels (platform / label filter on Hosts) @api', () => {
    * Checks: the returned ids equal the unfiltered host list. On this Fleet build, label_id on GET /hosts is ignored. The UI uses GET /labels/:id/hosts instead.
    * Why: a test that filters with GET /hosts?label_id= would pass while the page is broken.
    */
-  test('GET /hosts?label_id= does not filter (UI uses /labels/:id/hosts instead)', { tag: '@regression' }, async ({ api, allHosts }) => {
-    const linux = await api.requireLabel('All Linux');
-    const hosts = await api.listAllHosts({ label_id: linux.id });
-    expect(ids(hosts)).toEqual(ids(allHosts));
-  });
+  test(
+    'GET /hosts?label_id= does not filter (UI uses /labels/:id/hosts instead)',
+    { tag: '@regression' },
+    async ({ api, allHosts }) => {
+      const linux = await api.requireLabel('All Linux');
+      const hosts = await api.listAllHosts({ label_id: linux.id });
+      expect(ids(hosts)).toEqual(ids(allHosts));
+    },
+  );
 });
 
 /**
@@ -613,9 +700,7 @@ test.describe('API: enroll secrets (Add hosts / Enroll secrets modals) @api', ()
    * Why: the Add hosts modal prints this secret in the install command.
    */
   test('GET /spec/enroll_secret returns at least one secret', { tag: '@smoke' }, async ({ api }) => {
-    const body = await expectJson<EnrollSecretSpec>(
-      await api.get('/spec/enroll_secret'),
-    );
+    const body = await expectJson<EnrollSecretSpec>(await api.get('/spec/enroll_secret'));
     expect(body.spec.secrets.length).toBeGreaterThan(0);
     expect(body.spec.secrets[0].secret.length).toBeGreaterThan(5);
   });

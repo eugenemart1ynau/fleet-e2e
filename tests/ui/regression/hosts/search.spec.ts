@@ -35,13 +35,17 @@ test.describe('Hosts page – search', () => {
    * Checks: ?query= leaves the URL and the display names match the unfiltered GET /hosts list.
    * Why: clearing search is how an operator gets the full fleet back.
    */
-  test('clearing search drops ?query= and shows every host', { tag: '@regression' }, async ({ hostsPage, api, linuxHost }) => {
-    await hostsPage.goto();
-    await hostsPage.searchFor(linuxHost.display_name);
-    await hostsPage.searchFor('');
-    const all = await api.listHosts();
-    expect(await hostsPage.hostNames()).toEqual(all.map((h) => h.display_name));
-  });
+  test(
+    'clearing search drops ?query= and shows every host',
+    { tag: '@regression' },
+    async ({ hostsPage, api, linuxHost }) => {
+      await hostsPage.goto();
+      await hostsPage.searchFor(linuxHost.display_name);
+      await hostsPage.searchFor('');
+      const all = await api.listHosts();
+      expect(await hostsPage.hostNames()).toEqual(all.map((h) => h.display_name));
+    },
+  );
 
   /**
    * Action: search with spaces only, then with % and with _.
@@ -61,29 +65,44 @@ test.describe('Hosts page – search', () => {
   });
 
   /**
-   * Action: search by a prefix, UUID, IP, serial, computer name, and a different case of the display name, when the host has that value.
-   * Checks: each query's display names match GET /hosts?query=, and the simulated Linux host is in that list.
-   * Why: the placeholder says the box searches those fields, not only the visible hostname.
+   * Action: search by a prefix, UUID, IP, and a different case of the Linux host, plus serial and computer name from the enrolled host that reports them.
+   * Checks: each query's display names match GET /hosts?query=, and the host that owns that value is in the list.
+   * Why: the placeholder says the box searches those fields, not only the visible hostname. Simulated Linux hosts leave serial blank and copy the hostname into computer_name.
    */
-  test('prefix, uuid, ip, serial, computer name, and case match the API', { tag: '@regression' }, async ({ hostsPage, api, linuxHost }) => {
-    const cases: Array<{ name: string; query: string }> = [];
-    if (linuxHost.hostname.length >= 3) cases.push({ name: 'prefix', query: linuxHost.hostname.slice(0, 3) });
-    if (linuxHost.uuid) cases.push({ name: 'uuid', query: linuxHost.uuid });
-    if (linuxHost.primary_ip) cases.push({ name: 'ip', query: linuxHost.primary_ip });
-    if (linuxHost.hardware_serial) cases.push({ name: 'serial', query: linuxHost.hardware_serial });
-    if (linuxHost.computer_name) cases.push({ name: 'computer name', query: linuxHost.computer_name });
-    const upper = linuxHost.display_name.toUpperCase();
-    if (upper !== linuxHost.display_name) cases.push({ name: 'case', query: upper });
-    expect(cases.length, 'host has at least one searchable field').toBeGreaterThan(0);
+  test(
+    'prefix, uuid, ip, serial, computer name, and case match the API',
+    { tag: '@regression' },
+    async ({ hostsPage, api, linuxHost }) => {
+      const fleet = await api.listAllHosts();
+      const serialHost = fleet.find((h) => h.hardware_serial.trim() !== '');
+      const namedHost = fleet.find((h) => h.computer_name.trim() !== '' && h.computer_name !== h.hostname);
+      expect(linuxHost.hostname.length, 'linux hostname').toBeGreaterThanOrEqual(3);
+      expect(linuxHost.primary_ip, 'linux primary_ip').toBeTruthy();
+      expect(serialHost, 'an enrolled host must report hardware_serial').toBeTruthy();
+      expect(namedHost, 'an enrolled host must report a computer_name different from its hostname').toBeTruthy();
 
-    for (const c of cases) {
-      await hostsPage.goto();
-      await hostsPage.searchFor(c.query);
-      const expected = await api.listHosts({ query: c.query });
-      expect(await hostsPage.hostNames(), c.name).toEqual(expected.map((h) => h.display_name));
-      expect(expected.some((h) => h.id === linuxHost.id), c.name).toBeTruthy();
-    }
-  });
+      const cases: Array<{ name: string; query: string; id: number }> = [
+        { name: 'prefix', query: linuxHost.hostname.slice(0, 3), id: linuxHost.id },
+        { name: 'uuid', query: linuxHost.uuid, id: linuxHost.id },
+        { name: 'ip', query: linuxHost.primary_ip, id: linuxHost.id },
+        { name: 'serial', query: serialHost!.hardware_serial, id: serialHost!.id },
+        { name: 'computer name', query: namedHost!.computer_name, id: namedHost!.id },
+      ];
+      const upper = linuxHost.display_name.toUpperCase();
+      if (upper !== linuxHost.display_name) cases.push({ name: 'case', query: upper, id: linuxHost.id });
+
+      for (const c of cases) {
+        await hostsPage.goto();
+        await hostsPage.searchFor(c.query);
+        const expected = await api.listHosts({ query: c.query });
+        expect(await hostsPage.hostNames(), c.name).toEqual(expected.map((h) => h.display_name));
+        expect(
+          expected.some((h) => h.id === c.id),
+          c.name,
+        ).toBeTruthy();
+      }
+    },
+  );
 
   /**
    * Action: choose Online hosts, then search for the simulated Linux host.
@@ -103,14 +122,18 @@ test.describe('Hosts page – search', () => {
    * Checks: the display names match GET /labels/:id/hosts?query= for that name, and that host is in the list.
    * Why: operators search inside a platform filter, not only across the whole fleet.
    */
-  test('search plus Linux matches the label hosts API', { tag: '@regression' }, async ({ hostsPage, api, linuxHost }) => {
-    await hostsPage.goto();
-    await hostsPage.filterByPlatformOrLabel('Linux');
-    const labelId = hostsPage.labelIdFromUrl();
-    expect(labelId).toBeTruthy();
-    await hostsPage.searchFor(linuxHost.display_name);
-    const hosts = await api.listLabelHosts(labelId!, { query: linuxHost.display_name });
-    expect(await hostsPage.hostNames()).toEqual(hosts.map((h) => h.display_name));
-    expect(hosts.some((h) => h.id === linuxHost.id)).toBeTruthy();
-  });
+  test(
+    'search plus Linux matches the label hosts API',
+    { tag: '@regression' },
+    async ({ hostsPage, api, linuxHost }) => {
+      await hostsPage.goto();
+      await hostsPage.filterByPlatformOrLabel('Linux');
+      const labelId = hostsPage.labelIdFromUrl();
+      expect(labelId).toBeTruthy();
+      await hostsPage.searchFor(linuxHost.display_name);
+      const hosts = await api.listLabelHosts(labelId!, { query: linuxHost.display_name });
+      expect(await hostsPage.hostNames()).toEqual(hosts.map((h) => h.display_name));
+      expect(hosts.some((h) => h.id === linuxHost.id)).toBeTruthy();
+    },
+  );
 });

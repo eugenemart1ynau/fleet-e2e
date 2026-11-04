@@ -11,37 +11,41 @@ import { NO_MATCH_HOST_QUERY } from '../../../../src/utils/apiData';
 test.describe('Hosts page – Add hosts', () => {
   /**
    * Action: open Add hosts, click each platform, then click Close.
-   * Checks: the modal text changes for Windows, Linux, and ChromeOS. Close hides the modal and the URL stays /hosts/manage. The secret from GET /spec/enroll_secret is in the modal text. Any Settings link is left unclicked.
+   * Checks: the modal text changes for Windows, Linux, ChromeOS, and macOS. Close hides the modal and the URL stays /hosts/manage. The secret from GET /spec/enroll_secret is in the modal text. Any Settings link is left unclicked.
    * Why: the platform tabs are how an operator gets the right install command, and Close must not navigate away.
    */
-  test('Close, platform tabs, and the enroll secret stay on /hosts/manage', { tag: '@regression' }, async ({ hostsPage, api, page }) => {
-    await hostsPage.goto();
-    const modal = await hostsPage.openAddHosts();
+  test(
+    'Close, platform tabs, and the enroll secret stay on /hosts/manage',
+    { tag: '@regression' },
+    async ({ hostsPage, api, page }) => {
+      await hostsPage.goto();
+      const modal = await hostsPage.openAddHosts();
 
-    const spec = (await (await api.get('/spec/enroll_secret')).json()) as EnrollSecretSpec;
-    const secrets = spec.spec.secrets.map((s) => s.secret).filter((s) => s.length > 5);
-    expect(secrets.length).toBeGreaterThan(0);
-    const shown = await modal.evaluate((el) => {
-      const root = el as HTMLElement;
-      const fields = Array.from(root.querySelectorAll('input, textarea')).map((n) => (n as HTMLInputElement).value);
-      return `${root.innerText}\n${fields.join('\n')}`;
-    });
-    const token = shown.match(/enroll-secret(?:=|\s+)(\S+)/)?.[1];
-    expectIncluded(token, secrets, 'install command shows a secret from GET /spec/enroll_secret');
+      const spec = (await (await api.get('/spec/enroll_secret')).json()) as EnrollSecretSpec;
+      const secrets = spec.spec.secrets.map((s) => s.secret).filter((s) => s.length > 5);
+      expect(secrets.length).toBeGreaterThan(0);
+      const shown = await modal.evaluate((el) => {
+        const root = el as HTMLElement;
+        const fields = Array.from(root.querySelectorAll('input, textarea')).map((n) => (n as HTMLInputElement).value);
+        return `${root.innerText}\n${fields.join('\n')}`;
+      });
+      const token = shown.match(/enroll-secret(?:=|\s+)(\S+)/)?.[1];
+      expectIncluded(token, secrets, 'install command shows a secret from GET /spec/enroll_secret');
 
-    for (const platform of ['Windows', 'Linux', 'ChromeOS']) {
-      const before = await modal.innerText();
-      await modal.getByText(platform, { exact: true }).first().click();
-      await expect.poll(async () => modal.innerText()).not.toBe(before);
-    }
+      for (const platform of ['Windows', 'Linux', 'ChromeOS', 'macOS']) {
+        const before = await modal.innerText();
+        await modal.getByText(platform, { exact: true }).first().click();
+        await expect.poll(async () => modal.innerText()).not.toBe(before);
+      }
 
-    const settings = modal.getByRole('link', { name: /settings|manage enroll/i });
-    if (await settings.count()) await expect(settings.first()).toBeVisible();
+      const settings = modal.getByRole('link', { name: /settings|manage enroll/i });
+      if (await settings.count()) await expect(settings.first()).toBeVisible();
 
-    await modal.getByRole('button', { name: 'Close' }).click();
-    await expect(modal).toBeHidden();
-    await expect(page).toHaveURL(/\/hosts\/manage\/?(\?|$)/);
-  });
+      await modal.getByRole('button', { name: 'Close' }).click();
+      await expect(modal).toBeHidden();
+      await expect(page).toHaveURL(/\/hosts\/manage\/?(\?|$)/);
+    },
+  );
 
   /**
    * Action: open Add hosts from the toolbar and press Escape.

@@ -10,7 +10,9 @@ export class DeleteHostModal {
   readonly cancel: Locator;
 
   constructor(private readonly page: Page) {
-    this.root = page.locator('.modal__modal_container').filter({ has: page.locator('.modal__header', { hasText: 'Delete' }) });
+    this.root = page
+      .locator('.modal__modal_container')
+      .filter({ has: page.locator('.modal__header', { hasText: 'Delete' }) });
     this.confirm = this.root.getByRole('button', { name: 'Delete', exact: true });
     this.cancel = this.root.getByRole('button', { name: 'Cancel' });
   }

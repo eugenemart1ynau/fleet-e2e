@@ -86,11 +86,15 @@ test.describe('API: protected routes reject unauthenticated calls @api', () => {
    * Checks: 401 with a reason matching "Authorization header required". format=csv is sent because Fleet checks format before auth, so a bare path is 400.
    * Why: this is the Hosts page CSV download.
    */
-  test('GET /hosts/report?format=csv without Authorization header returns 401', { tag: '@regression' }, async ({ anonApi }) => {
-    await expectFleetError(await anonApi.get('/hosts/report', { params: { format: 'csv' } }), 401, {
-      reason: AUTH_REQUIRED,
-    });
-  });
+  test(
+    'GET /hosts/report?format=csv without Authorization header returns 401',
+    { tag: '@regression' },
+    async ({ anonApi }) => {
+      await expectFleetError(await anonApi.get('/hosts/report', { params: { format: 'csv' } }), 401, {
+        reason: AUTH_REQUIRED,
+      });
+    },
+  );
 
   /**
    * Call: GET /hosts with bearer token "not-a-real-token".
@@ -124,22 +128,30 @@ test.describe('API: protected routes reject unauthenticated calls @api', () => {
    * Checks: 401, then a follow-up GET of that host is still 200.
    * Why: a missing token must not delete a host.
    */
-  test('DELETE /hosts/:id without token returns 401 and deletes nothing', { tag: '@regression' }, async ({ anonApi, api, knownHost }) => {
-    await expectFleetError(await anonApi.delete(`/hosts/${knownHost.id}`), 401, { reason: AUTH_REQUIRED });
-    expect(await api.getHostStatusCode(knownHost.id)).toBe(200);
-  });
+  test(
+    'DELETE /hosts/:id without token returns 401 and deletes nothing',
+    { tag: '@regression' },
+    async ({ anonApi, api, knownHost }) => {
+      await expectFleetError(await anonApi.delete(`/hosts/${knownHost.id}`), 401, { reason: AUTH_REQUIRED });
+      expect(await api.getHostStatusCode(knownHost.id)).toBe(200);
+    },
+  );
 
   /**
    * Call: POST /hosts/delete with one real host id and no token.
    * Checks: 401, then a follow-up GET of that host is still 200.
    * Why: the bulk-delete body must not run anonymously.
    */
-  test('POST /hosts/delete without token returns 401 and deletes nothing', { tag: '@regression' }, async ({ anonApi, api, knownHost }) => {
-    await expectFleetError(await anonApi.post('/hosts/delete', { data: { ids: [knownHost.id] } }), 401, {
-      reason: AUTH_REQUIRED,
-    });
-    expect(await api.getHostStatusCode(knownHost.id)).toBe(200);
-  });
+  test(
+    'POST /hosts/delete without token returns 401 and deletes nothing',
+    { tag: '@regression' },
+    async ({ anonApi, api, knownHost }) => {
+      await expectFleetError(await anonApi.post('/hosts/delete', { data: { ids: [knownHost.id] } }), 401, {
+        reason: AUTH_REQUIRED,
+      });
+      expect(await api.getHostStatusCode(knownHost.id)).toBe(200);
+    },
+  );
 
   /**
    * Call: GET /hosts/count, POST /logout, then GET /hosts/count again, on one logged-in client.

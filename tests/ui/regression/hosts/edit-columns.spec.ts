@@ -58,21 +58,25 @@ test.describe('Hosts page – edit columns', () => {
    * Checks: the hostname header is absent while hidden, visible after save, and hidden_host_columns no longer lists it. The previous setting is restored.
    * Why: showing a column is the reverse of the smoke hide, and it has to persist the same way.
    */
-  test('showing Hostname persists until the setting is restored', { tag: '@regression' }, async ({ hostsPage, api }) => {
-    await withHostColumnLock(async () => {
-      const before = await api.getHiddenHostColumns();
-      try {
-        await api.setHiddenHostColumns(['hostname']);
-        await hostsPage.goto();
-        await expect(hostsPage.columnHeader('hostname')).toHaveCount(0);
-        await hostsPage.toggleColumnAndSave('Hostname');
-        await expect(hostsPage.columnHeader('hostname')).toBeVisible();
-        expect(await api.getHiddenHostColumns()).not.toContain('hostname');
-      } finally {
-        await api.setHiddenHostColumns(before.length ? before : []);
-      }
-    });
-  });
+  test(
+    'showing Hostname persists until the setting is restored',
+    { tag: '@regression' },
+    async ({ hostsPage, api }) => {
+      await withHostColumnLock(async () => {
+        const before = await api.getHiddenHostColumns();
+        try {
+          await api.setHiddenHostColumns(['hostname']);
+          await hostsPage.goto();
+          await expect(hostsPage.columnHeader('hostname')).toHaveCount(0);
+          await hostsPage.toggleColumnAndSave('Hostname');
+          await expect(hostsPage.columnHeader('hostname')).toBeVisible();
+          expect(await api.getHiddenHostColumns()).not.toContain('hostname');
+        } finally {
+          await api.setHiddenHostColumns(before.length ? before : []);
+        }
+      });
+    },
+  );
 
   /**
    * Action: open Edit columns.

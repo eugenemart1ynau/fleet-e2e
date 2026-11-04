@@ -7,14 +7,6 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "baseUrl": ".",
-    "paths": {
-      "@config/*": ["src/config/*"],
-      "@api/*": ["src/api/*"],
-      "@pages/*": ["src/pages/*"],
-      "@fixtures": ["src/fixtures/index.ts"],
-      "@utils/*": ["src/utils/*"]
-    },
     "types": ["node"]
   },
   "include": ["src/**/*.ts", "tests/**/*.ts", "playwright.config.ts"]

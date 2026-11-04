@@ -3,7 +3,11 @@ import type { FleetErrorBody } from './types';
 
 const describe = async (res: APIResponse): Promise<string> => {
   let body = '';
-  try { body = (await res.text()).slice(0, 500); } catch { /* body already consumed / empty */ }
+  try {
+    body = (await res.text()).slice(0, 500);
+  } catch {
+    /* body already consumed / empty */
+  }
   return `${res.url()} -> ${res.status()}\n${body}`;
 };
 
@@ -75,7 +79,12 @@ export function expectNullOrArray(value: unknown, label: string): void {
 }
 
 /** Every element satisfies `pred`; failure lists offending items. */
-export function expectEvery<T>(items: T[], pred: (t: T) => boolean, label: string, show: (t: T) => unknown = (t) => t): void {
+export function expectEvery<T>(
+  items: T[],
+  pred: (t: T) => boolean,
+  label: string,
+  show: (t: T) => unknown = (t) => t,
+): void {
   const bad = items.filter((i) => !pred(i));
   expect(bad.map(show), `${label}: offending items`).toEqual([]);
 }

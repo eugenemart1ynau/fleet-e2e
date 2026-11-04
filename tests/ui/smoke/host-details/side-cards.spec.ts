@@ -11,19 +11,23 @@ test.describe('Host details – Activity / Labels / User cards', () => {
    * Checks: the Activity heading is visible with "No activity", "Past", or "Upcoming". The User heading and "Username (IdP)" are visible. The Labels heading is visible, and one label other than "All Hosts" or "All Linux" from GET /hosts/:id is on screen.
    * Why: a missing card means the details summary did not render.
    */
-  test('Activity, Labels, and User sections render on Details', { tag: '@smoke' }, async ({ hostDetailsPage, api, linuxHost }) => {
-    const host = await api.getHost(linuxHost.id);
-    await hostDetailsPage.goto(host.id);
+  test(
+    'Activity, Labels, and User sections render on Details',
+    { tag: '@smoke' },
+    async ({ hostDetailsPage, api, linuxHost }) => {
+      const host = await api.getHost(linuxHost.id);
+      await hostDetailsPage.goto(host.id);
 
-    await expect(hostDetailsPage.activityHeading).toBeVisible();
-    await expect(hostDetailsPage.activityCopy()).toBeVisible();
+      await expect(hostDetailsPage.activityHeading).toBeVisible();
+      await expect(hostDetailsPage.activityCopy()).toBeVisible();
 
-    await expect(hostDetailsPage.userHeading).toBeVisible();
-    await expect(hostDetailsPage.userIdpLabel()).toBeVisible();
+      await expect(hostDetailsPage.userHeading).toBeVisible();
+      await expect(hostDetailsPage.userIdpLabel()).toBeVisible();
 
-    await expect(hostDetailsPage.labelsHeading).toBeVisible();
-    const shown = host.labels.filter((l) => l.name !== 'All Hosts' && l.name !== 'All Linux').map((l) => l.name);
-    expect(shown.length, 'host has a label chip besides All Hosts and All Linux').toBeGreaterThan(0);
-    await hostDetailsPage.expectOneLabelVisible(shown);
-  });
+      await expect(hostDetailsPage.labelsHeading).toBeVisible();
+      const shown = host.labels.filter((l) => l.name !== 'All Hosts' && l.name !== 'All Linux').map((l) => l.name);
+      expect(shown.length, 'host has a label chip besides All Hosts and All Linux').toBeGreaterThan(0);
+      await hostDetailsPage.expectOneLabelVisible(shown);
+    },
+  );
 });

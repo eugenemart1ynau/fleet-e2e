@@ -58,9 +58,11 @@ export function buildModel(root: string): DashboardModel {
   const controlIds = new Set(controls.map((c) => c.id));
   for (const hotspot of hotspots) {
     if (!screenIds.has(hotspot.screenId)) errors.push(`Hotspot ${hotspot.id} is on unknown screen ${hotspot.screenId}`);
-    if (!controlIds.has(hotspot.controlId)) errors.push(`Hotspot ${hotspot.id} uses unknown control ${hotspot.controlId}`);
+    if (!controlIds.has(hotspot.controlId))
+      errors.push(`Hotspot ${hotspot.id} uses unknown control ${hotspot.controlId}`);
     const control = controls.find((c) => c.id === hotspot.controlId);
-    if (control && control.coverage === 'out-of-scope') errors.push(`Out-of-scope control ${control.id} should not have hotspot ${hotspot.id}`);
+    if (control && control.coverage === 'out-of-scope')
+      errors.push(`Out-of-scope control ${control.id} should not have hotspot ${hotspot.id}`);
     if (control && control.coverage !== 'out-of-scope' && control.coverage !== hotspot.coverage) {
       errors.push(`Hotspot ${hotspot.id} is ${hotspot.coverage} but control ${control.id} is ${control.coverage}`);
     }
@@ -100,7 +102,9 @@ export function buildModel(root: string): DashboardModel {
     for (const title of Object.keys(titles)) claim(file, title, titles[title], `${file} exact`);
   }
   for (const rule of apiPrefix) {
-    const hits = cards.filter((c) => c.file === rule.file && c.title.startsWith(rule.prefix) && !apiExact[rule.file]?.[c.title]);
+    const hits = cards.filter(
+      (c) => c.file === rule.file && c.title.startsWith(rule.prefix) && !apiExact[rule.file]?.[c.title],
+    );
     if (!hits.length) errors.push(`API prefix matched nothing: ${rule.file} "${rule.prefix}"`);
     for (const card of hits) claim(card.file, card.title, rule.hotspots, `${rule.file} prefix ${rule.prefix}`);
   }
@@ -115,11 +119,14 @@ export function buildModel(root: string): DashboardModel {
     const card = tests.find((t) => t.file === journey.testFile && t.title === journey.testTitle);
     if (!card) errors.push(`Journey test not found: ${journey.testTitle}`);
     for (const step of journey.steps) {
-      if (!screenIds.has(step.screenId)) errors.push(`Journey ${journey.id} step ${step.n} has unknown screen ${step.screenId}`);
+      if (!screenIds.has(step.screenId))
+        errors.push(`Journey ${journey.id} step ${step.n} has unknown screen ${step.screenId}`);
       const hotspot = hotspots.find((h) => h.id === step.hotspotId);
       if (!hotspot) errors.push(`Journey ${journey.id} step ${step.n} has unknown hotspot ${step.hotspotId}`);
       else if (hotspot.screenId !== step.screenId) {
-        errors.push(`Journey ${journey.id} step ${step.n} hotspot ${hotspot.id} is on ${hotspot.screenId}, not ${step.screenId}`);
+        errors.push(
+          `Journey ${journey.id} step ${step.n} hotspot ${hotspot.id} is on ${hotspot.screenId}, not ${step.screenId}`,
+        );
       }
     }
   }
@@ -186,7 +193,10 @@ export function buildModel(root: string): DashboardModel {
     skipNotes,
     screens: screens.map((screen) => {
       const shot = shots?.screens[screen.id];
-      const image = shot && fs.existsSync(path.join(root, 'coverage-dashboard', 'screens', shot.file)) ? `screens/${shot.file}` : null;
+      const image =
+        shot && fs.existsSync(path.join(root, 'coverage-dashboard', 'screens', shot.file))
+          ? `screens/${shot.file}`
+          : null;
       return {
         ...screen,
         image,
@@ -216,7 +226,10 @@ function checkCoverageDoc(root: string): string[] {
   const errors: string[] = [];
   for (const line of text.split('\n')) {
     if (!line.startsWith('|')) continue;
-    const cells = line.split('|').slice(1, -1).map((cell) => cell.trim());
+    const cells = line
+      .split('|')
+      .slice(1, -1)
+      .map((cell) => cell.trim());
     if (cells.length < 4 || cells[2] !== 'automated') continue;
     const spec = cells[3].replace(/`/g, '').trim();
     if (!spec || spec === '—') {
@@ -224,7 +237,8 @@ function checkCoverageDoc(root: string): string[] {
       continue;
     }
     const candidates = [path.join(root, 'tests', `${spec}.spec.ts`), path.join(root, 'tests', `${spec}.api.spec.ts`)];
-    if (!candidates.some((file) => fs.existsSync(file))) errors.push(`COVERAGE.md automated spec file is missing: ${spec}`);
+    if (!candidates.some((file) => fs.existsSync(file)))
+      errors.push(`COVERAGE.md automated spec file is missing: ${spec}`);
   }
   return errors;
 }

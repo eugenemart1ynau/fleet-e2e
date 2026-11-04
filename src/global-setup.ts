@@ -16,12 +16,20 @@ export default async function globalSetup(): Promise<void> {
   while (Date.now() < deadline) {
     try {
       const res = await ctx.get('/healthz', { timeout: 5_000 });
-      if (res.ok()) { healthy = true; break; }
-    } catch { /* not up yet */ }
+      if (res.ok()) {
+        healthy = true;
+        break;
+      }
+    } catch {
+      /* not up yet */
+    }
     await new Promise((r) => setTimeout(r, 3_000));
   }
   await ctx.dispose();
-  if (!healthy) throw new Error(`Fleet not healthy at ${env.baseURL}/healthz after ${env.readinessTimeoutMs}ms. Is \`fleetctl preview\` running?`);
+  if (!healthy)
+    throw new Error(
+      `Fleet not healthy at ${env.baseURL}/healthz after ${env.readinessTimeoutMs}ms. Is \`fleetctl preview\` running?`,
+    );
 
   const api = await FleetApiClient.login();
   try {
@@ -36,7 +44,9 @@ export default async function globalSetup(): Promise<void> {
       try {
         softwareCount = (await api.getHostSoftware(linux.id)).count;
         if (softwareCount > 0) break;
-      } catch { /* agent is still reporting */ }
+      } catch {
+        /* agent is still reporting */
+      }
       await new Promise((r) => setTimeout(r, 3_000));
     }
     if (softwareCount === 0) {
@@ -44,7 +54,9 @@ export default async function globalSetup(): Promise<void> {
         `Linux host ${linux.display_name} (${linux.id}) reported no software. Software checks need an inventory; they no longer skip.`,
       );
     }
-    console.log(`[global-setup] Fleet ready at ${env.baseURL}: ${hosts.length} hosts (${hosts.filter((h) => h.status === 'online').length} online), ${softwareCount} software titles on ${linux.display_name}`);
+    console.log(
+      `[global-setup] Fleet ready at ${env.baseURL}: ${hosts.length} hosts (${hosts.filter((h) => h.status === 'online').length} online), ${softwareCount} software titles on ${linux.display_name}`,
+    );
   } finally {
     await api.dispose();
   }

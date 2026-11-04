@@ -8,10 +8,7 @@ import { HostsPage } from '../../../../src/pages/HostsPage';
 const COLUMNS = 'display_name,hostname,uuid,status,platform';
 
 async function downloadCsv(page: Page, hostsPage: HostsPage) {
-  const [download] = await Promise.all([
-    page.waitForEvent('download'),
-    hostsPage.exportButton.click(),
-  ]);
+  const [download] = await Promise.all([page.waitForEvent('download'), hostsPage.exportButton.click()]);
   const filePath = await download.path();
   expect(filePath, 'download path').toBeTruthy();
   return parseCsv(fs.readFileSync(filePath!, 'utf8'));

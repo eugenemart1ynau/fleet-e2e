@@ -11,15 +11,19 @@ test.describe('Host details – software inventory', () => {
    * Checks: the "{count} item(s)" label matches GET /hosts/:id/software. The URL gains query={name}, and that name is visible in a cell. Fails when the host has reported no software yet.
    * Why: the count and the search box are what an operator uses on this tab.
    */
-  test('inventory count matches API and search filters', { tag: '@smoke' }, async ({ hostDetailsPage, api, linuxHost }) => {
-    const sw = await api.getHostSoftware(linuxHost.id);
-    expect(sw.count, 'host has not reported software yet').toBeGreaterThan(0);
+  test(
+    'inventory count matches API and search filters',
+    { tag: '@smoke' },
+    async ({ hostDetailsPage, api, linuxHost }) => {
+      const sw = await api.getHostSoftware(linuxHost.id);
+      expect(sw.count, 'host has not reported software yet').toBeGreaterThan(0);
 
-    await hostDetailsPage.goto(linuxHost.id, 'software');
-    await expect(hostDetailsPage.softwareCount(sw.count)).toBeVisible();
+      await hostDetailsPage.goto(linuxHost.id, 'software');
+      await expect(hostDetailsPage.softwareCount(sw.count)).toBeVisible();
 
-    const target = sw.software[0].name;
-    await hostDetailsPage.searchSoftware(target);
-    await expect(hostDetailsPage.softwareCell(target)).toBeVisible();
-  });
+      const target = sw.software[0].name;
+      await hostDetailsPage.searchSoftware(target);
+      await expect(hostDetailsPage.softwareCell(target)).toBeVisible();
+    },
+  );
 });

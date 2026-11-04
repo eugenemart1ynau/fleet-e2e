@@ -31,10 +31,19 @@ const repoRoot = process.cwd();
 const nextDir = path.join(repoRoot, 'coverage-dashboard', 'screens-next');
 
 function atlas(): { screens: ScreenDef[]; hotspots: HotspotDef[] } {
-  const raw = execFileSync(process.execPath, ['--experimental-strip-types', '--disable-warning=MODULE_TYPELESS_PACKAGE_JSON', '--disable-warning=ExperimentalWarning', 'tools/coverage/dump-atlas.ts'], {
-    cwd: repoRoot,
-    encoding: 'utf8',
-  });
+  const raw = execFileSync(
+    process.execPath,
+    [
+      '--experimental-strip-types',
+      '--disable-warning=MODULE_TYPELESS_PACKAGE_JSON',
+      '--disable-warning=ExperimentalWarning',
+      'tools/coverage/dump-atlas.ts',
+    ],
+    {
+      cwd: repoRoot,
+      encoding: 'utf8',
+    },
+  );
   return JSON.parse(raw);
 }
 
@@ -149,7 +158,9 @@ test('capture masked Fleet screens for the coverage atlas', async ({ page }) => 
         await hosts.goto();
         await page.getByRole('button', { name: 'Hosts page settings' }).click();
         await page.locator('.actions-dropdown-select__menu').getByText('Enroll secrets', { exact: true }).click();
-        await expect(page.locator('.modal__modal_container').filter({ hasText: 'Manage enroll secrets' })).toBeVisible();
+        await expect(
+          page.locator('.modal__modal_container').filter({ hasText: 'Manage enroll secrets' }),
+        ).toBeVisible();
         await maskSecrets(page, secrets);
         masked.add(id);
         return;
@@ -218,7 +229,10 @@ test('capture masked Fleet screens for the coverage atlas', async ({ page }) => 
         await hosts.goto();
         await page.getByTestId('user-menu').getByRole('combobox').focus();
         await page.keyboard.press('ArrowDown');
-        await page.locator('[id*="-option-"]').filter({ hasText: /^Sign out$/ }).click();
+        await page
+          .locator('[id*="-option-"]')
+          .filter({ hasText: /^Sign out$/ })
+          .click();
         await expect(page).toHaveURL(/\/login/);
         await page.goto('/hosts/manage');
         await expect(page).toHaveURL(/\/login/);
@@ -291,7 +305,10 @@ function anchor(target: Page, key: string): Locator {
     case 'enrollModal':
       return target.locator('.modal__modal_container').filter({ hasText: 'Manage enroll secrets' });
     case 'addSecret':
-      return target.locator('.modal__modal_container').filter({ hasText: 'Manage enroll secrets' }).getByRole('button', { name: /add secret/i });
+      return target
+        .locator('.modal__modal_container')
+        .filter({ hasText: 'Manage enroll secrets' })
+        .getByRole('button', { name: /add secret/i });
     case 'selection':
       return target.locator('thead.active-selection');
     case 'runScript':
@@ -327,7 +344,10 @@ function anchor(target: Page, key: string): Locator {
     case 'actionsDelete':
       return details.actionOption('Delete');
     case 'actionsMenu':
-      return target.locator('[class*="dropdown"]').filter({ has: target.getByTestId('dropdown-option') }).last();
+      return target
+        .locator('[class*="dropdown"]')
+        .filter({ has: target.getByTestId('dropdown-option') })
+        .last();
     case 'deleteCancel':
       return details.deleteModal.cancel;
     case 'deleteConfirm':
@@ -369,14 +389,17 @@ async function measure(locator: Locator, fullPage: boolean): Promise<Box | null>
       }
     }
     if (width < 2 || height < 2) continue;
-    const frame = await target.evaluate((_node, pageShot) => ({
-      scrollX: pageShot ? window.scrollX : 0,
-      scrollY: pageShot ? window.scrollY : 0,
-      shotW: window.innerWidth,
-      shotH: pageShot
-        ? Math.max(document.documentElement.scrollHeight, document.body.scrollHeight, window.innerHeight)
-        : window.innerHeight,
-    }), fullPage);
+    const frame = await target.evaluate(
+      (_node, pageShot) => ({
+        scrollX: pageShot ? window.scrollX : 0,
+        scrollY: pageShot ? window.scrollY : 0,
+        shotW: window.innerWidth,
+        shotH: pageShot
+          ? Math.max(document.documentElement.scrollHeight, document.body.scrollHeight, window.innerHeight)
+          : window.innerHeight,
+      }),
+      fullPage,
+    );
     const absX = left + frame.scrollX;
     const absY = top + frame.scrollY;
     const x = Math.max(0, absX);
@@ -384,7 +407,12 @@ async function measure(locator: Locator, fullPage: boolean): Promise<Box | null>
     const w = Math.min(absX + width, frame.shotW) - x;
     const h = Math.min(absY + height, frame.shotH) - y;
     if (w < 2 || h < 2 || frame.shotW < 2 || frame.shotH < 2) continue;
-    return { x: (x / frame.shotW) * 100, y: (y / frame.shotH) * 100, w: (w / frame.shotW) * 100, h: (h / frame.shotH) * 100 };
+    return {
+      x: (x / frame.shotW) * 100,
+      y: (y / frame.shotH) * 100,
+      w: (w / frame.shotW) * 100,
+      h: (h / frame.shotH) * 100,
+    };
   }
   return null;
 }
@@ -411,7 +439,8 @@ async function maskSecrets(target: Page, secrets: string[]): Promise<void> {
     }
     for (const el of document.querySelectorAll('input, textarea')) {
       const input = el as HTMLInputElement;
-      for (const secret of list) if (input.value.includes(secret)) input.value = input.value.split(secret).join('••••••••');
+      for (const secret of list)
+        if (input.value.includes(secret)) input.value = input.value.split(secret).join('••••••••');
     }
     for (const el of document.querySelectorAll('*')) {
       for (const attr of [...el.attributes]) {
@@ -435,12 +464,27 @@ function assertPngHasNoSecret(file: string, secrets: string[]): void {
 }
 
 async function disarm(target: Page): Promise<void> {
-  const modal = target.locator('.modal__modal_container').filter({ has: target.locator('.modal__header', { hasText: 'Delete' }) });
-  if ((await modal.count()) > 0 && (await modal.first().isVisible().catch(() => false))) {
+  const modal = target
+    .locator('.modal__modal_container')
+    .filter({ has: target.locator('.modal__header', { hasText: 'Delete' }) });
+  if (
+    (await modal.count()) > 0 &&
+    (await modal
+      .first()
+      .isVisible()
+      .catch(() => false))
+  ) {
     await modal.getByRole('button', { name: 'Cancel' }).click();
     await expect(modal).toBeHidden();
   }
   const clear = target.getByRole('button', { name: 'Clear selection' });
-  if ((await clear.count()) > 0 && (await clear.first().isVisible().catch(() => false))) await clear.first().click();
+  if (
+    (await clear.count()) > 0 &&
+    (await clear
+      .first()
+      .isVisible()
+      .catch(() => false))
+  )
+    await clear.first().click();
   await target.keyboard.press('Escape').catch(() => undefined);
 }

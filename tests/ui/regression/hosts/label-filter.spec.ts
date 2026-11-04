@@ -28,45 +28,53 @@ test.describe('Hosts page – platform / label filter', () => {
    * Checks: the URL is /hosts/manage/labels/{id} and the display names match GET /labels/:id/hosts, including an empty list.
    * Why: those rows are the rest of the same menu. An empty platform must not keep the unfiltered fleet.
    */
-  test('mobile platforms and builtin labels match the label hosts API', { tag: '@regression' }, async ({ hostsPage, api }) => {
-    const names = [
-      'iOS',
-      'iPadOS',
-      'Android',
-      'Apple Silicon macOS hosts',
-      'ARM-based Windows hosts',
-      'Debian-based Linux hosts',
-      'x86-based Windows hosts',
-    ];
-    for (const name of names) {
-      await hostsPage.goto();
-      await hostsPage.filterByPlatformOrLabel(name);
-      const labelId = hostsPage.labelIdFromUrl();
-      expect(labelId, name).toBeTruthy();
-      const hosts = await api.listLabelHosts(labelId!);
-      expect(await hostsPage.hostNames(), name).toEqual(hosts.map((h) => h.display_name));
-    }
-  });
+  test(
+    'mobile platforms and builtin labels match the label hosts API',
+    { tag: '@regression' },
+    async ({ hostsPage, api }) => {
+      const names = [
+        'iOS',
+        'iPadOS',
+        'Android',
+        'Apple Silicon macOS hosts',
+        'ARM-based Windows hosts',
+        'Debian-based Linux hosts',
+        'x86-based Windows hosts',
+      ];
+      for (const name of names) {
+        await hostsPage.goto();
+        await hostsPage.filterByPlatformOrLabel(name);
+        const labelId = hostsPage.labelIdFromUrl();
+        expect(labelId, name).toBeTruthy();
+        const hosts = await api.listLabelHosts(labelId!);
+        expect(await hostsPage.hostNames(), name).toEqual(hosts.map((h) => h.display_name));
+      }
+    },
+  );
 
   /**
    * Action: open the platform menu and type Debian into Filter by label name.
    * Checks: Debian-based Linux hosts stays visible. Apple Silicon, ARM-based Windows, and x86-based Windows hosts do not. The URL stays /hosts/manage. Add label is visible and is not clicked.
    * Why: that box narrows the Labels section. Add label opens the label editor.
    */
-  test('filter by label name narrows the menu and stays on Hosts', { tag: '@regression' }, async ({ hostsPage, page }) => {
-    await hostsPage.goto();
-    const menu = await hostsPage.openLabelMenu();
-    const nameFilter = hostsPage.labelNameFilter();
-    // fill() blurs this react-select input and closes the menu.
-    await nameFilter.click();
-    await nameFilter.pressSequentially('Debian');
-    await expect(menu.getByText('Debian-based Linux hosts', { exact: true })).toBeVisible();
-    await expect(menu.getByText('Apple Silicon macOS hosts', { exact: true })).toHaveCount(0);
-    await expect(menu.getByText('ARM-based Windows hosts', { exact: true })).toHaveCount(0);
-    await expect(menu.getByText('x86-based Windows hosts', { exact: true })).toHaveCount(0);
-    await expect(menu.getByRole('button', { name: 'Add label' })).toBeVisible();
-    await expect(page).toHaveURL(/\/hosts\/manage\/?(\?|$)/);
-  });
+  test(
+    'filter by label name narrows the menu and stays on Hosts',
+    { tag: '@regression' },
+    async ({ hostsPage, page }) => {
+      await hostsPage.goto();
+      const menu = await hostsPage.openLabelMenu();
+      const nameFilter = hostsPage.labelNameFilter();
+      // fill() blurs this react-select input and closes the menu.
+      await nameFilter.click();
+      await nameFilter.pressSequentially('Debian');
+      await expect(menu.getByText('Debian-based Linux hosts', { exact: true })).toBeVisible();
+      await expect(menu.getByText('Apple Silicon macOS hosts', { exact: true })).toHaveCount(0);
+      await expect(menu.getByText('ARM-based Windows hosts', { exact: true })).toHaveCount(0);
+      await expect(menu.getByText('x86-based Windows hosts', { exact: true })).toHaveCount(0);
+      await expect(menu.getByRole('button', { name: 'Add label' })).toBeVisible();
+      await expect(page).toHaveURL(/\/hosts\/manage\/?(\?|$)/);
+    },
+  );
 
   /**
    * Action: choose Linux, open the platform menu, and choose Linux again.

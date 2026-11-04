@@ -29,36 +29,44 @@ test.describe('Hosts page – status filter', () => {
    * Checks: the URL contains status=offline. A zero count shows "No hosts match your filters". A non-zero count matches GET /hosts/count?status=offline.
    * Why: Offline is the other half of the online/offline split and is often empty on preview.
    */
-  test('Offline filter matches API (empty state when none offline)', { tag: '@regression' }, async ({ hostsPage, api, page }) => {
-    await hostsPage.goto();
-    await hostsPage.filterByStatus('Offline hosts');
-    await expect(page).toHaveURL(/status=offline/);
+  test(
+    'Offline filter matches API (empty state when none offline)',
+    { tag: '@regression' },
+    async ({ hostsPage, api, page }) => {
+      await hostsPage.goto();
+      await hostsPage.filterByStatus('Offline hosts');
+      await expect(page).toHaveURL(/status=offline/);
 
-    const count = await api.countHosts({ status: 'offline' });
-    if (count === 0) {
-      await expect(hostsPage.emptyState).toContainText('No hosts match your filters');
-    } else {
-      await hostsPage.expectCount(count);
-    }
-  });
+      const count = await api.countHosts({ status: 'offline' });
+      if (count === 0) {
+        await expect(hostsPage.emptyState).toContainText('No hosts match your filters');
+      } else {
+        await hostsPage.expectCount(count);
+      }
+    },
+  );
 
   /**
    * Action: open /hosts/manage and choose Missing hosts.
    * Checks: the URL contains status=missing. A zero count shows "No hosts match your filters". A non-zero count matches GET /hosts/count?status=missing.
    * Why: Missing is a time-based overlay and is often empty on preview.
    */
-  test('Missing filter matches API (empty state when none missing)', { tag: '@regression' }, async ({ hostsPage, api, page }) => {
-    await hostsPage.goto();
-    await hostsPage.filterByStatus('Missing hosts');
-    await expect(page).toHaveURL(/status=missing/);
+  test(
+    'Missing filter matches API (empty state when none missing)',
+    { tag: '@regression' },
+    async ({ hostsPage, api, page }) => {
+      await hostsPage.goto();
+      await hostsPage.filterByStatus('Missing hosts');
+      await expect(page).toHaveURL(/status=missing/);
 
-    const count = await api.countHosts({ status: 'missing' });
-    if (count === 0) {
-      await expect(hostsPage.emptyState).toContainText('No hosts match your filters');
-    } else {
-      await hostsPage.expectCount(count);
-    }
-  });
+      const count = await api.countHosts({ status: 'missing' });
+      if (count === 0) {
+        await expect(hostsPage.emptyState).toContainText('No hosts match your filters');
+      } else {
+        await hostsPage.expectCount(count);
+      }
+    },
+  );
 
   /**
    * Action: choose Online hosts, then choose All hosts.
@@ -78,18 +86,22 @@ test.describe('Hosts page – status filter', () => {
    * Checks: the URL contains status=enrolled. A zero count shows the empty state. A non-zero count matches GET /hosts/count?status=enrolled.
    * Why: Enrolled is a free-tier status and excludes hosts that are only pending.
    */
-  test('Enrolled filter matches API and syncs ?status=enrolled', { tag: '@regression' }, async ({ hostsPage, api, page }) => {
-    await hostsPage.goto();
-    await hostsPage.filterByStatus('Enrolled hosts');
-    await expect(page).toHaveURL(/status=enrolled/);
+  test(
+    'Enrolled filter matches API and syncs ?status=enrolled',
+    { tag: '@regression' },
+    async ({ hostsPage, api, page }) => {
+      await hostsPage.goto();
+      await hostsPage.filterByStatus('Enrolled hosts');
+      await expect(page).toHaveURL(/status=enrolled/);
 
-    const count = await api.countHosts({ status: 'enrolled' });
-    if (count === 0) {
-      await expect(hostsPage.emptyState).toContainText('No hosts match your filters');
-    } else {
-      await hostsPage.expectCount(count);
-    }
-  });
+      const count = await api.countHosts({ status: 'enrolled' });
+      if (count === 0) {
+        await expect(hostsPage.emptyState).toContainText('No hosts match your filters');
+      } else {
+        await hostsPage.expectCount(count);
+      }
+    },
+  );
 
   /**
    * Action: open /hosts/manage?status=not-a-status directly.
