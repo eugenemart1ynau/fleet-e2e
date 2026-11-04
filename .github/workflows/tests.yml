@@ -4,14 +4,17 @@ on:
   push:
   pull_request:
 
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   tests:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
       FLEET_EMAIL: admin@example.com
-      # Published preview password. Quotes keep the # in the value.
-      FLEET_PASSWORD: 'preview1337#'
+      FLEET_PASSWORD: ${{ secrets.FLEET_PASSWORD }}
       READINESS_TIMEOUT_MS: '360000'
       WORKERS: '2'
     steps:

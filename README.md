@@ -248,7 +248,7 @@ That command takes the screenshots, masks the enroll secret before saving, rebui
 
 [`.github/workflows/check.yml`](./.github/workflows/check.yml) runs those three on push and pull request, on Node 20.
 
-[`.github/workflows/tests.yml`](./.github/workflows/tests.yml) boots `fleetctl preview` on the same events and runs the suite in order: API, smoke, regression, E2E, then the Chrome delete. It uses the published preview login. When a layer fails, the trace, the HTML report, and `preview.log` are uploaded for that layer.
+[`.github/workflows/tests.yml`](./.github/workflows/tests.yml) boots `fleetctl preview` on the same events and runs the suite in order: API, smoke, regression, E2E, then the Chrome delete. The preview password is the `FLEET_PASSWORD` repository secret, so the log shows `***` instead of the value. When a layer fails, the trace, the HTML report, and `preview.log` are uploaded for that layer.
 
 ## When setup fails
 
