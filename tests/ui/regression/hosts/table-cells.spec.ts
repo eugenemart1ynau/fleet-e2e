@@ -7,6 +7,13 @@ function statusLabel(status: HostStatus): string {
   return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
+/** Fleet prints at most two decimals and drops trailing zeros, so 452.80 is "452.8 GB". */
+function diskSpaceLabels(gigs: number): string[] {
+  const fixed = gigs.toFixed(2);
+  const trimmed = fixed.replace(/0+$/, '').replace(/\.$/, '');
+  return [`${fixed} GB`, `${trimmed} GB`];
+}
+
 /**
  * Action: open /hosts/manage and read the operating system, status, and disk space cells.
  * Checks: each visible row matches GET /hosts for those three fields.
@@ -15,7 +22,7 @@ function statusLabel(status: HostStatus): string {
 test.describe('Hosts page – row cells', () => {
   /**
    * Action: open /hosts/manage.
-   * Checks: os_version, status, and available disk space on each row match that host from GET /hosts.
+   * Checks: os_version, status, and available disk space on each row match that host from GET /hosts. Disk space may drop a trailing zero.
    * Why: a row can show the right name and the wrong operating system.
    */
   test(
@@ -31,9 +38,9 @@ test.describe('Hosts page – row cells', () => {
         // The cell repeats the value for its tooltip, so the visible text is not the API string alone.
         await expect(row.locator('td.os_version__cell'), host.display_name).toContainText(host.os_version || '---');
         await expect(row.locator('td.status__cell'), host.display_name).toContainText(statusLabel(host.status));
-        await expect(row.locator('td.gigs_disk_space_available__cell'), host.display_name).toContainText(
-          `${host.gigs_disk_space_available.toFixed(2)} GB`,
-        );
+        const disk = await row.locator('td.gigs_disk_space_available__cell').innerText();
+        const labels = diskSpaceLabels(host.gigs_disk_space_available);
+        expect(labels.some((label) => disk.includes(label)), `${host.display_name}: ${disk}`).toBeTruthy();
       }
     },
   );

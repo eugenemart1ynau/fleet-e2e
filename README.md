@@ -4,7 +4,7 @@ This repo is a Playwright + TypeScript suite for two pages in [Fleet](https://fl
 
 The goal is simple. If someone changes Hosts or host details, these tests should say whether an operator can still see the fleet, find a host, trust the facts on the page, and delete a host without surprises. Every check compares the screen (or the HTTP response) to what Fleet's API returns on this run. Nothing is pinned to a laptop name, a host count, or a screenshot from last week.
 
-It runs against a fresh [`fleetctl preview`](https://fleetdm.com/docs/using-fleet/fleetctl-cli#fleetctl-preview). That is Fleet's free local sandbox: Docker, a few simulated hosts, and the public preview login. Premium and MDM controls are listed in [COVERAGE.md](./COVERAGE.md) and left alone, because preview cannot exercise them.
+It runs against a fresh [`fleetctl preview`](https://fleetdm.com/docs/using-fleet/fleetctl-cli#fleetctl-preview). That is Fleet's free local sandbox: Docker, a few simulated hosts, and the preview login on [fleetdm.com/try-fleet](https://fleetdm.com/try-fleet). Premium and MDM controls are listed in [COVERAGE.md](./COVERAGE.md) and left alone, because preview cannot exercise them.
 
 ## What we cover
 
@@ -42,11 +42,21 @@ npx playwright test tests/ui/smoke tests/ui/regression tests/ui/e2e --project=sa
 
 ## What you need
 
-- Node 20 or newer
-- Docker, running
-- [`fleetctl`](https://fleetdm.com/docs/using-fleet/fleetctl-cli) on your PATH
+- **Node 20 or newer**, from [nodejs.org](https://nodejs.org). This repo requires it in `package.json`.
+- **Docker, running**, from [docker.com](https://www.docker.com). `fleetctl preview` uses it.
+- **`fleetctl`**, installed from [fleetdm.com/try-fleet](https://fleetdm.com/try-fleet). No license key. That page also has the preview email and password.
+- **Playwright browsers.** After `npm ci`, install Chrome, Firefox, and WebKit with the command in First run.
+- **A `.env` file** in the repo root. Create it yourself. The suite does not start without `FLEET_EMAIL` and `FLEET_PASSWORD`. `.env` stays untracked.
 
-Copy [`.env.example`](./.env.example) to `.env` and set `FLEET_EMAIL` and `FLEET_PASSWORD` there. The suite does not start without them. `.env` stays untracked.
+Quote the password. A `#` in an unquoted value starts a comment, so the rest of the line is dropped.
+
+```bash
+BASE_URL=http://localhost:1337
+FLEET_EMAIL=<email on https://fleetdm.com/try-fleet>
+FLEET_PASSWORD="<password on that same page>"
+```
+
+`BASE_URL`, `MIN_HOSTS`, `READINESS_TIMEOUT_MS`, and `WORKERS` already have defaults in code. Only the two login variables are required.
 
 ## First run
 
@@ -56,12 +66,11 @@ Start the sandbox and leave that terminal open. The first start downloads images
 fleetctl preview
 ```
 
-In another terminal, from this repo:
+In another terminal, from this repo, install dependencies, install the three browsers, create `.env` as above, then run the suite:
 
 ```bash
 npm ci
 npx playwright install chromium firefox webkit
-cp .env.example .env   # optional
 npm test
 ```
 
@@ -71,10 +80,11 @@ npm test
 [global-setup] Fleet ready at http://localhost:1337: 8 hosts (8 online), 102 software titles on <linux-host>
 ```
 
-When you are done with the sandbox:
+When you are done with the sandbox, stop it with the same `fleetctl` you started. If that binary lives under your home directory:
 
 ```bash
 fleetctl preview stop
+# or: ~/.fleetctl/fleetctl preview stop
 ```
 
 ## How a full run moves
@@ -90,7 +100,7 @@ Playwright does not throw every file at the browser at once. [`playwright.config
 
 Locally, retries are 0, so a flake fails the first time. If `CI` is set, read-only projects retry twice. The delete project stays at 0 either way.
 
-Workers default to 2. The suite shares one preview and one admin user. Edit columns is a single saved setting (`hidden_host_columns`), so those tests take a file lock at `.auth/host-columns.lock`. Other tests still assume the default columns. Keep `WORKERS` at 1 or 2. Four workers against one preview is how login starts returning 429. The API client already backs off on 429, and a quieter worker count is the better fix.
+Workers default to 2. The suite shares one preview and one admin user. Edit columns is a single saved setting (`hidden_host_columns`), so those tests take a file lock at `.auth/host-columns.lock`. Other tests still assume the default columns. Keep `WORKERS` at 1 or 2. Four workers against one preview is how login starts returning 429. The API client already backs off on 429, and a quieter worker count is the better fix. `npm run test:headed` forces one worker so the visible Chrome, Firefox, and Safari windows do not close each other's menus.
 
 ## Commands
 
@@ -109,7 +119,7 @@ All of these set `FORCE_COLOR` so the checkmarks stay colored.
 | The one Hosts and host-details journey, three browsers, no delete                        | `npm run test:ui:e2e`          |
 | Anything tagged `@smoke`, API and UI                                                     | `npm run test:smoke`           |
 | Host delete. Also runs the three read-only browsers first, because delete waits for them | `npm run test:destructive`     |
-| Watch the browser                                                                        | `npm run test:headed`          |
+| Watch the browser, one window at a time                                                  | `npm run test:headed`          |
 | Playwright's UI mode                                                                     | `npm run test:ui`              |
 | Open the last HTML report                                                                | `npm run report`               |
 | Typecheck the suite and the coverage atlas                                               | `npm run typecheck`            |
@@ -153,7 +163,7 @@ Locators live in the page objects. Role, placeholder, or visible text first. A C
 ```
 playwright.config.ts          projects, timeouts, trace on failure
 src/
-  config/env.ts               BASE_URL, login, workers, readiness. Preview defaults if .env is absent
+  config/env.ts               BASE_URL, login, workers, readiness. Login is required in .env
   global-setup.ts             health, hosts, and software before any project starts
   api/FleetApiClient.ts       the oracle: login, hosts, software, labels, columns, enroll secret
   api/assertions.ts           status, JSON, Fleet error envelope, secret-safe membership
@@ -184,13 +194,13 @@ On failure, Playwright keeps a trace, a screenshot, and a video. `npm run report
 
 ## Configuration
 
-Copy [`.env.example`](./.env.example) to `.env` and set `FLEET_EMAIL` and `FLEET_PASSWORD`. Do not commit `.env`.
+Create a `.env` in the repo root. Set `FLEET_EMAIL` and `FLEET_PASSWORD` from [fleetdm.com/try-fleet](https://fleetdm.com/try-fleet). Quote the password, because `#` starts a comment. Do not commit `.env`.
 
 | Variable               | Default                 | What it does                                                       |
 | ---------------------- | ----------------------- | ------------------------------------------------------------------ |
 | `BASE_URL`             | `http://localhost:1337` | Preview origin. No trailing slash required                         |
-| `FLEET_EMAIL`          | set in `.env`           | Preview admin. Required                                            |
-| `FLEET_PASSWORD`       | set in `.env`           | Preview admin password. Required                                   |
+| `FLEET_EMAIL`          | none                    | Preview admin from try-fleet. Required                             |
+| `FLEET_PASSWORD`       | none                    | Preview password from that same page. Required. Quote it           |
 | `MIN_HOSTS`            | `2`                     | How many enrolled hosts setup waits for                            |
 | `READINESS_TIMEOUT_MS` | `180000`                | How long setup waits for Fleet, hosts, and software                |
 | `WORKERS`              | `2`                     | Playwright workers. Stay at 1 or 2 on one preview                  |

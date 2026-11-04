@@ -8,7 +8,7 @@
   "description": "Playwright + TypeScript E2E tests for Fleet Hosts and Host details pages (fleetctl preview)",
   "scripts": {
     "test": "FORCE_COLOR=1 playwright test",
-    "test:headed": "FORCE_COLOR=1 playwright test --headed",
+    "test:headed": "FORCE_COLOR=1 playwright test --headed --workers=1",
     "test:ui": "FORCE_COLOR=1 playwright test --ui",
     "test:smoke": "FORCE_COLOR=1 playwright test --grep @smoke",
     "test:ui:smoke": "FORCE_COLOR=1 playwright test tests/ui/smoke --project=chrome --project=firefox --project=safari",
