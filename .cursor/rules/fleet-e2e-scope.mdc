@@ -12,7 +12,7 @@ This repo automates Fleet Hosts and host details only. Follow this boundary on e
 - **Hosts** — `http://localhost:1337/hosts/manage` (`/hosts/manage`). Anything that stays on this page.
 - **Host details** — the page reached by clicking a host. Tabs stay in scope: `/hosts/:id/details`, `/software/inventory`, `/policies`, `/reports`.
 - **Still this page:** the platform/label filter at `/hosts/manage/labels/:id`; modals that do not navigate away (Add hosts, Edit columns, Delete, Enroll secrets); CSV export.
-- **Stack** — Playwright with TypeScript. Run against a fresh `fleetctl preview` (defaults in `.env.example`: `` / `REDACTED#`).
+- **Stack** — Playwright with TypeScript. Run against a fresh `fleetctl preview`. Set `FLEET_EMAIL` and `FLEET_PASSWORD` in `.env`.
 
 ## Out of scope
 

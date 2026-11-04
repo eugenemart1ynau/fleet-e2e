@@ -46,7 +46,7 @@ npx playwright test tests/ui/smoke tests/ui/regression tests/ui/e2e --project=sa
 - Docker, running
 - [`fleetctl`](https://fleetdm.com/docs/using-fleet/fleetctl-cli) on your PATH
 
-Preview's published login is `` / `REDACTED#`. Those are the defaults in [`.env.example`](./.env.example) and in `src/config/env.ts`. You only need a `.env` file if your preview is somewhere else.
+Copy [`.env.example`](./.env.example) to `.env` and set `FLEET_EMAIL` and `FLEET_PASSWORD` there. The suite does not start without them. `.env` stays untracked.
 
 ## First run
 
@@ -180,13 +180,13 @@ On failure, Playwright keeps a trace, a screenshot, and a video. `npm run report
 
 ## Configuration
 
-Copy [`.env.example`](./.env.example) to `.env` when you need to override. Both files are the public preview values.
+Copy [`.env.example`](./.env.example) to `.env` and set `FLEET_EMAIL` and `FLEET_PASSWORD`. Do not commit `.env`.
 
 | Variable | Default | What it does |
 |---|---|---|
 | `BASE_URL` | `http://localhost:1337` | Preview origin. No trailing slash required |
-| `FLEET_EMAIL` | `` | Preview admin |
-| `FLEET_PASSWORD` | `REDACTED#` | Preview admin password |
+| `FLEET_EMAIL` | set in `.env` | Preview admin. Required |
+| `FLEET_PASSWORD` | set in `.env` | Preview admin password. Required |
 | `MIN_HOSTS` | `2` | How many enrolled hosts setup waits for |
 | `READINESS_TIMEOUT_MS` | `180000` | How long setup waits for Fleet, hosts, and software |
 | `WORKERS` | `2` | Playwright workers. Stay at 1 or 2 on one preview |

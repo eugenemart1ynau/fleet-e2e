@@ -2,15 +2,19 @@ import fs from 'fs';
 import path from 'path';
 import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
+import * as dotenv from 'dotenv';
 import { buildModel } from './model.ts';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const outDir = path.join(root, 'coverage-dashboard');
 const outFile = path.join(outDir, 'index.html');
 
+dotenv.config({ path: path.join(root, '.env') });
+const password = process.env.FLEET_PASSWORD;
+
 const model = buildModel(root);
 const json = JSON.stringify(model).replace(/</g, '\\u003c');
-if (json.includes('REDACTED')) {
+if (password && json.includes(password)) {
   throw new Error('Refusing to write the atlas: the preview password was copied into the page');
 }
 

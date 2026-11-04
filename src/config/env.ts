@@ -8,11 +8,17 @@ const num = (v: string | undefined, d: number): number => {
   return Number.isFinite(n) && v !== undefined && v !== '' ? n : d;
 };
 
-/** Single source of runtime configuration. Defaults = stock `fleetctl preview`. */
+function requiredEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) throw new Error(`${name} is required. Set it in .env`);
+  return value;
+}
+
+/** Single source of runtime configuration. Login comes from `.env`, not from this file. */
 export const env = {
   baseURL: (process.env.BASE_URL ?? 'http://localhost:1337').replace(/\/$/, ''),
-  email: process.env.FLEET_EMAIL ?? '',
-  password: process.env.FLEET_PASSWORD ?? 'REDACTED#',
+  email: requiredEnv('FLEET_EMAIL'),
+  password: requiredEnv('FLEET_PASSWORD'),
   minHosts: num(process.env.MIN_HOSTS, 2),
   readinessTimeoutMs: num(process.env.READINESS_TIMEOUT_MS, 180_000),
   workers: num(process.env.WORKERS, 2),
