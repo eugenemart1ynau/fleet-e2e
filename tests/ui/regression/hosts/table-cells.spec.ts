@@ -40,7 +40,10 @@ test.describe('Hosts page – row cells', () => {
         await expect(row.locator('td.status__cell'), host.display_name).toContainText(statusLabel(host.status));
         const disk = await row.locator('td.gigs_disk_space_available__cell').innerText();
         const labels = diskSpaceLabels(host.gigs_disk_space_available);
-        expect(labels.some((label) => disk.includes(label)), `${host.display_name}: ${disk}`).toBeTruthy();
+        expect(
+          labels.some((label) => disk.includes(label)),
+          `${host.display_name}: ${disk}`,
+        ).toBeTruthy();
       }
     },
   );

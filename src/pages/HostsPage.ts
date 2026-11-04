@@ -78,8 +78,7 @@ export class HostsPage extends BasePage {
       await this.page.goto(url);
     } catch (err) {
       const message = String(err);
-      const cancelled =
-        message.includes('interrupted by another navigation') || message.includes('NS_BINDING_ABORTED');
+      const cancelled = message.includes('interrupted by another navigation') || message.includes('NS_BINDING_ABORTED');
       if (!cancelled) throw err;
       await this.page.goto(url);
     }
