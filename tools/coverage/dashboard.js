@@ -57,6 +57,49 @@
     return `<span class="badge ${kindClass[kind] || 'plain'}">${esc(label || kind)}</span>`;
   }
 
+  function slug(value) {
+    const base = String(value)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+    return base || 'group';
+  }
+
+  function journeyStepFor(screen, hot) {
+    const steps = data.journeys.flatMap((journey) => journey.steps.map((step) => ({ journey, step })));
+    return (
+      steps.find((item) => item.step.hotspotId === hot.id) ||
+      steps.find((item) => item.step.screenId === screen.id) ||
+      null
+    );
+  }
+
+  function placeHash(screen, hot) {
+    if (screen.page === 'session') {
+      const hit = journeyStepFor(screen, hot);
+      if (hit) return `#journeys/${hit.journey.id}/${hit.step.n}`;
+      return '#journeys/online-host';
+    }
+    const view = screen.page === 'host-details' ? 'details' : 'hosts';
+    return `#${view}/${screen.id}/${hot.id}`;
+  }
+
+  function boxStyle(hot, selected) {
+    const area = Math.max(hot.box.w * hot.box.h, 0.2);
+    const z = selected ? 40 : Math.max(1, Math.min(30, Math.round(80 / area)));
+    return `left:${hot.box.x}%;top:${hot.box.y}%;width:${Math.max(hot.box.w, 1.2)}%;height:${Math.max(hot.box.h, 1.2)}%;z-index:${z}`;
+  }
+
+  function scrollBoxIntoFrame(box) {
+    const frame = box.closest('.shot-frame');
+    if (!frame) return;
+    const frameRect = frame.getBoundingClientRect();
+    const boxRect = box.getBoundingClientRect();
+    const top = boxRect.top - frameRect.top + frame.scrollTop - frame.clientHeight / 2 + boxRect.height / 2;
+    const left = boxRect.left - frameRect.left + frame.scrollLeft - frame.clientWidth / 2 + boxRect.width / 2;
+    frame.scrollTo({ top: Math.max(0, top), left: Math.max(0, left) });
+  }
+
   function testCard(test) {
     const skips = test.skips.length ? `<p class="note">May skip on this preview: ${esc(test.skips.join('; '))}</p>` : '';
     const loop = test.loopNote ? `<p class="note">${esc(test.loopNote)}</p>` : '';
@@ -66,9 +109,7 @@
         const screen = data.screens.find((item) => item.hotspots.some((hot) => hot.id === id));
         const hot = screen && screen.hotspots.find((item) => item.id === id);
         if (!screen || !hot) return '';
-        const view = screen.page === 'host-details' ? 'details' : screen.page === 'session' ? 'journeys' : 'hosts';
-        const hash = view === 'journeys' ? `#journeys/online-host` : `#${view}/${screen.id}/${id}`;
-        return `<a href="${hash}">${esc(hot.label)}</a>`;
+        return `<a href="${placeHash(screen, hot)}">${esc(hot.label)}</a>`;
       })
       .filter(Boolean);
     return `<article class="test">
@@ -200,11 +241,12 @@
     const boxes = screen.hotspots
       .map((hot, index) => {
         if (!hot.box) return '';
-        return `<button class="hot ${hot.coverage}" style="left:${hot.box.x}%;top:${hot.box.y}%;width:${Math.max(hot.box.w, 1.2)}%;height:${Math.max(hot.box.h, 1.2)}%" aria-pressed="${hot.id === selected}" data-hot="${esc(hot.id)}" title="${esc(hot.label)}"><span class="n">${index + 1}</span></button>`;
+        const on = hot.id === selected;
+        return `<button type="button" class="hot ${hot.coverage}" style="${boxStyle(hot, on)}" aria-pressed="${on}" data-hot="${esc(hot.id)}" title="${esc(hot.label)}"><span class="n">${index + 1}</span></button>`;
       })
       .join('');
     const picture = screen.image
-      ? `<div class="shot-frame"><div class="stage"><img alt="${esc(screen.title)} on Fleet preview" src="${esc(screen.image)}">${boxes}</div></div>`
+      ? `<div class="shot-frame"><div class="stage" data-screen="${esc(screen.id)}"><img alt="${esc(screen.title)} on Fleet preview" src="${esc(screen.image)}">${boxes}</div></div>`
       : `<div class="shot-frame missing-shot">No screenshot yet. Run <code>npm run coverage:shots</code> while <code>fleetctl preview</code> is up. The regions below still list the tests.</div>`;
     const regions = screen.hotspots
       .map((hot, index) => {
@@ -248,11 +290,11 @@
       .filter((item) => item.box && item.id === step.hotspotId)
       .map(
         (item) =>
-          `<span class="hot ${item.coverage}" style="left:${item.box.x}%;top:${item.box.y}%;width:${Math.max(item.box.w, 1.2)}%;height:${Math.max(item.box.h, 1.2)}%;pointer-events:none" aria-hidden="true"><span class="n">${step.n}</span></span>`,
+          `<span class="hot ${item.coverage}" style="${boxStyle(item, true)};pointer-events:none" aria-pressed="true"><span class="n">${step.n}</span></span>`,
       )
       .join('');
     const picture = screen.image
-      ? `<div class="shot-frame"><div class="stage"><img alt="${esc(screen.title)}" src="${esc(screen.image)}">${boxes}</div></div>`
+      ? `<div class="shot-frame"><div class="stage" data-screen="${esc(screen.id)}"><img alt="${esc(screen.title)}" src="${esc(screen.image)}">${boxes}</div></div>`
       : `<div class="shot-frame missing-shot">Screenshot not captured for ${esc(screen.title)}.</div>`;
     return shell(
       'journeys',
@@ -273,16 +315,34 @@
     );
   }
 
+  function apiGroups() {
+    const used = new Set();
+    return data.apiGroups.map((group, index) => {
+      let id = slug(group.title);
+      if (used.has(id)) id = `${id}-${index + 1}`;
+      used.add(id);
+      return { ...group, id };
+    });
+  }
+
   function api() {
-    const body = data.apiGroups
+    const current = hashParts().a;
+    const groups = apiGroups();
+    const chips = groups
+      .map(
+        (group) =>
+          `<a class="chip" href="#api/${esc(group.id)}" ${group.id === current ? 'aria-pressed="true"' : ''}>${esc(group.title)}</a>`,
+      )
+      .join('');
+    const body = groups
       .map((group) => {
         const note = group.fileNote ? `<p class="note">${esc(group.fileNote)}</p>` : '';
-        return `<section class="group"><h2>${esc(group.title)}</h2><p class="sub">${esc(group.why)}</p><p class="meta">${esc(group.file)}</p>${note}${group.testIds
+        return `<section class="group" id="api-${esc(group.id)}"><h2>${esc(group.title)}</h2><p class="sub">${esc(group.why)}</p><p class="meta">${esc(group.file)}</p>${note}${group.testIds
           .map((id) => testCard(tests.get(id)))
           .join('')}</section>`;
       })
       .join('');
-    return shell('api', body);
+    return shell('api', `<div class="chips">${chips}</div>${body}`);
   }
 
   function gaps() {
@@ -363,8 +423,6 @@
     app.innerHTML = html;
     const input = document.getElementById('q');
     if (input) {
-      input.focus();
-      input.setSelectionRange(query.length, query.length);
       input.addEventListener('input', () => {
         query = input.value;
         const { a, b } = hashParts();
@@ -375,8 +433,20 @@
         if (results) results.innerHTML = catalogBody(rows);
       });
     }
-    const frame = app.querySelector('.hot[aria-pressed="true"]');
-    if (frame) frame.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    app.querySelectorAll('button.hot[data-hot]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const stage = btn.closest('[data-screen]');
+        const screenId = stage && stage.dataset.screen;
+        if (!screenId) return;
+        go(`#${hashParts().view}/${screenId}/${btn.dataset.hot}`);
+      });
+    });
+    const box = app.querySelector('.shot-frame .hot[aria-pressed="true"]');
+    if (box) scrollBoxIntoFrame(box);
+    if (current === 'api') {
+      const group = hashParts().a && document.getElementById(`api-${hashParts().a}`);
+      if (group) group.scrollIntoView({ block: 'start' });
+    }
   }
 
   function catalogBody(rows) {

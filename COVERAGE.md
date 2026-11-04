@@ -2,6 +2,8 @@
 
 Legend: automated · planned (SHOULD) · nice-to-have · out of scope / not testable on free preview
 
+The visual map is `npm run coverage`. This file stays the written matrix. The dashboard does not parse it.
+
 Read-only UI specs below run in Chrome, Firefox, and Safari (`npm test` or `npm run test:ui-only`). Smoke is `npm run test:ui:smoke`. Regression is `npm run test:ui:regression`. The one Hosts and host-details journey is `npm run test:ui:e2e`. Delete stays on Chrome only (`npm run test:destructive`).
 
 | Area | Feature | Status | Spec | Why |

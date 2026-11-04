@@ -99,7 +99,7 @@ nav a[aria-current="page"], .chip[aria-pressed="true"] { background: var(--ink);
   padding: 0;
 }
 .hot.boundary { border-style: dashed; border-color: var(--amber); background: rgba(154, 104, 24, 0.2); }
-.hot[aria-pressed="true"] { background: rgba(28, 127, 118, 0.32); outline: 2px solid var(--ink); z-index: 2; }
+.hot[aria-pressed="true"] { background: rgba(28, 127, 118, 0.32); outline: 2px solid var(--ink); z-index: 40; }
 .hot.boundary[aria-pressed="true"] { background: rgba(154, 104, 24, 0.34); }
 .hot .n {
   position: absolute; top: -1px; left: -1px;

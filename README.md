@@ -18,6 +18,28 @@ We stop at a control that would leave. A software title, a policy, a query, the 
 
 The living list of what is automated, planned, or out of scope is [COVERAGE.md](./COVERAGE.md).
 
+## Browsers
+
+Read-only UI runs in three browsers, from the same specs, on every `npm test` and `npm run test:ui-only`:
+
+| Browser in the report | What Playwright launches | Projects |
+|---|---|---|
+| Chrome | Desktop Chrome (Chromium) | `chrome`, plus the login setup and the delete |
+| Firefox | Desktop Firefox | `firefox` |
+| Safari | WebKit, the engine Safari uses | `safari` |
+
+Smoke, regression, and the one Hosts and host-details journey each run in all three. Install them once with `npx playwright install chromium firefox webkit`.
+
+The host delete runs once, in Chrome only, after Chrome, Firefox, and Safari have finished. It is not repeated in Firefox or Safari. API specs do not open a browser.
+
+To run the read-only UI in one browser while you are writing a test:
+
+```bash
+npx playwright test tests/ui/smoke tests/ui/regression tests/ui/e2e --project=chrome
+npx playwright test tests/ui/smoke tests/ui/regression tests/ui/e2e --project=firefox
+npx playwright test tests/ui/smoke tests/ui/regression tests/ui/e2e --project=safari
+```
+
 ## What you need
 
 - Node 20 or newer
@@ -91,8 +113,8 @@ All of these set `FORCE_COLOR` so the checkmarks stay colored.
 | Playwright's UI mode | `npm run test:ui` |
 | Open the last HTML report | `npm run report` |
 | Typecheck, no tests | `npm run typecheck` |
-| Rebuild the coverage atlas page | `npm run coverage` |
-| Photograph preview, then rebuild the atlas | `npm run coverage:shots` |
+| Launch the coverage dashboard | `npm run coverage` |
+| Refresh the dashboard screenshots from preview, then open it | `npm run coverage:shots` |
 
 A single file, one browser, no retry:
 
@@ -118,7 +140,7 @@ Each read-only test carries one tag, on the test itself:
 - `@regression` is the rest: empty states, bad ids, combined filters, deep links.
 - `@destructive` sits on the delete describe. Those tests do not also wear smoke or regression.
 
-Above every UI test is a three-line comment: Action, Checks, Why. API tests use Call, Checks, Why. The coverage atlas reads those comments. If you add a test, write the comment and add a row to `COVERAGE.md`.
+Above every UI test is a three-line comment: Action, Checks, Why. API tests use Call, Checks, Why. The coverage dashboard reads those comments. If you add a test, write the comment and add a row to `COVERAGE.md`. A new UI test also needs a hotspot in [`tools/coverage/atlas.ts`](./tools/coverage/atlas.ts). `npm run coverage` fails if a test has no Action/Call, Checks, and Why, or if a UI test is not on a hotspot.
 
 Locators live in the page objects. Role, placeholder, or visible text first. A CSS hook only when Fleet has no accessible name (react-select menus, a few modal classes). Specs should call the page object instead of querying the DOM themselves.
 
@@ -148,7 +170,8 @@ tests/
                               login, Online filter, open the Linux host, Software, Back, Sign out
   ui/destructive/host-details/delete-host.spec.ts
                               cancel, then confirm, on a spare Linux host
-tools/coverage/               builds the atlas from the Action/Call comments
+tools/coverage/               builds the dashboard from the Action/Call comments
+coverage-dashboard/           index.html, masked screenshots, hotspot boxes
 ```
 
 Timeouts in the Playwright config: 60 seconds for a test, 10 seconds for an assertion, 15 seconds for an action, 30 seconds for a navigation. The "click every column header" sort test raises its own timeout to 3 minutes.
@@ -169,13 +192,35 @@ Copy [`.env.example`](./.env.example) to `.env` when you need to override. Both 
 | `WORKERS` | `2` | Playwright workers. Stay at 1 or 2 on one preview |
 | `CI` | unset | When set, read-only retries become 2 and `test.only` fails the run |
 
-`.env`, `.auth/` (the saved login and the column lock), `test-results/`, `playwright-report/`, and `*.pkg` are gitignored. A downloaded osquery installer from the Add hosts modal does not belong in the repo.
+`.env`, `.auth/` (the saved login and the column lock), `test-results/`, `playwright-report/`, `coverage-dashboard/screens-next/`, and `*.pkg` are gitignored. A downloaded osquery installer from the Add hosts modal does not belong in the repo. The dashboard page and its masked screenshots are kept.
 
-## Coverage atlas
+## Coverage dashboard
 
-`npm run coverage` writes `coverage-dashboard/index.html` and opens it. The page is a map of every test: smoke, regression, the journey, the Chrome delete, and the API deletes that are written but not run. Read-only UI is counted once, even though it runs in three browsers. The text comes from the Action/Call, Checks, and Why comments, not from the last green run.
+Launch it from the repo root. This rebuilds `coverage-dashboard/index.html` from the Action/Call, Checks, and Why comments and opens it. Preview does not need to be running.
 
-`npm run coverage:shots` needs preview. It photographs the pages, masks the enroll secret before saving, and does not confirm Delete or post a secret. Hotspot boxes are measured on the live page. The masked screenshots in `coverage-dashboard/screens/` are safe to keep, so the page is readable without preview. After a Fleet layout change, run the shots again.
+```bash
+npm run coverage
+```
+
+Set `COVERAGE_NO_OPEN=1` to write the file and leave it closed. To open the last build without rebuilding:
+
+```bash
+open coverage-dashboard/index.html
+```
+
+The page is the spec map, not the last Playwright run. A green run does not mean an unlisted control was tested. Read-only UI is counted once, even though those specs run in Chrome, Firefox, and Safari. The kinds are smoke, regression, the one journey, the Chrome delete, and the API deletes that are written but not run.
+
+The views are overview bars, Hosts and host details with screenshots, journeys, API groups, what was left out, and all tests. Click a region on a screenshot to read that test. Journey steps and API group chips jump to that step or group. The All tests box filters by title, action, and why.
+
+The page is dark. The screenshots stay the light Fleet UI, with the enroll secret masked.
+
+To photograph the live pages and then open the dashboard, start `fleetctl preview` first, then:
+
+```bash
+npm run coverage:shots
+```
+
+That command takes the screenshots, masks the enroll secret before saving, rebuilds the page, and opens it. It does not confirm Delete or post a secret. Hotspot boxes are measured on the live page, so after a Fleet layout change, run `npm run coverage:shots` again. The masked PNGs live in `coverage-dashboard/screens/` and are kept. Only `coverage-dashboard/screens-next/`, the in-progress capture, is gitignored.
 
 ## When setup fails
 
